@@ -1,0 +1,2 @@
+name,operations,elapsed_seconds,ops_per_second,min_ns,mean_ns,p50_ns,p95_ns,p99_ns,max_ns,trades,fills,active_orders,bid_levels,ask_levels,checksum,seed,runs,invariants,build_type,compiler,os,arch,composition
+best-price-access,1000000,0.053233958,18785001.8592,0,68.398253,83,84,84,16333,0,0,200,100,100,4776657317813432951,42,3,1,Release,Clang 21.0.0 (clang-2100.3.34.2),macOS,arm64,read best bid and ask with 100 levels

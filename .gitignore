@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.coverage
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+build/
+build-*/
+dist/
+
+# Local data and secrets
+.env
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Editors and operating systems
+.DS_Store
+.idea/
+.vscode/

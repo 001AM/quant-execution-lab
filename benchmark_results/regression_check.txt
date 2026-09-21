@@ -1,0 +1,18 @@
+QUANT ENGINE BENCHMARK
+Benchmark: mixed
+Operations: 100000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: limit=59954;cancel=14930;modify=10027;cross=9965;market=5124
+Elapsed seconds: 0.096
+Throughput ops/sec: 1045599.471
+Trades/Fills: 15089/15089
+Active orders: 29935
+Bid/Ask levels: 1/0
+Checksum: 18035042999861659955
+Invariants: PASS
+
+Throughput change vs supplied baseline: 5.639%

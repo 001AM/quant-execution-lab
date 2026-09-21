@@ -1,0 +1,18 @@
+QUANT ENGINE BENCHMARK
+Benchmark: matching-level-walk
+Operations: 10000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: crossing LIMIT BUY; 4 fills and price levels consumed per incoming order
+Elapsed seconds: 0.041
+Throughput ops/sec: 243799.122
+Latency ns min/mean/p50/p95/p99/max: 3625.000 / 4146.329 / 4167.000 / 4334.000 / 4458.000 / 12167.000
+Trades/Fills: 40000/40000
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11087109120415449531
+Invariants: PASS
+

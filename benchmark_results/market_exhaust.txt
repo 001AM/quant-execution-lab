@@ -1,0 +1,18 @@
+QUANT ENGINE BENCHMARK
+Benchmark: market-exhaust-book
+Operations: 1
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: one MARKET BUY exhausts all configured resting liquidity
+Elapsed seconds: 0.062
+Throughput ops/sec: 16.214
+Latency ns min/mean/p50/p95/p99/max: 61777416.000 / 61777416.000 / 61777416.000 / 61777416.000 / 61777416.000 / 61777416.000
+Trades/Fills: 100000/100000
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11160679642482303963
+Invariants: PASS
+

@@ -1,0 +1,2 @@
+name,timestamp_utc,operations,elapsed_seconds,ops_per_second,min_ns,mean_ns,p50_ns,p95_ns,p99_ns,max_ns,trades,fills,active_orders,bid_levels,ask_levels,checksum,seed,runs,invariants,build_type,compiler,os,arch,composition
+mixed,2026-09-21T15:36:29Z,1000000,0.914547833,1093436.52012,291,929.014529,833,1625,1709,1597750,150170,150170,299208,1,0,10997445773294864847,42,5,1,Release,Clang 21.0.0 (clang-2100.3.34.2),macOS,arm64,limit=599537;cancel=150159;modify=100134;cross=100193;market=49977

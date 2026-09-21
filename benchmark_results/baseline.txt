@@ -1,0 +1,540 @@
+QUANT ENGINE BENCHMARK
+Benchmark: submit
+Operations: 10000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% resting LIMIT submits
+Elapsed seconds: 0.010
+Throughput ops/sec: 1045747.041
+Latency ns min/mean/p50/p95/p99/max: 708.000 / 936.757 / 916.000 / 1125.000 / 1625.000 / 52917.000
+Trades/Fills: 0/0
+Active orders: 10000
+Bid/Ask levels: 50/50
+Checksum: 6691922301227366589
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: cancel-existing-level
+Operations: 10000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid cancels; shared level remains until final cancel
+Elapsed seconds: 0.008
+Throughput ops/sec: 1284095.463
+Latency ns min/mean/p50/p95/p99/max: 583.000 / 750.647 / 709.000 / 834.000 / 959.000 / 84458.000
+Trades/Fills: 0/0
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11126445248426326267
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: cancel-final-level
+Operations: 10000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid cancels; each removes a price level
+Elapsed seconds: 0.011
+Throughput ops/sec: 871254.087
+Latency ns min/mean/p50/p95/p99/max: 875.000 / 1167.135 / 1125.000 / 1292.000 / 1417.000 / 71250.000
+Trades/Fills: 0/0
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11126445248426326267
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: modify-decrease
+Operations: 10000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid decrease modifications
+Elapsed seconds: 0.003
+Throughput ops/sec: 3660880.888
+Latency ns min/mean/p50/p95/p99/max: 208.000 / 291.626 / 292.000 / 334.000 / 375.000 / 6458.000
+Trades/Fills: 0/0
+Active orders: 10000
+Bid/Ask levels: 100/0
+Checksum: 5766157336532238123
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: modify-increase
+Operations: 10000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid increase modifications
+Elapsed seconds: 0.006
+Throughput ops/sec: 1695657.895
+Latency ns min/mean/p50/p95/p99/max: 458.000 / 594.994 / 584.000 / 667.000 / 708.000 / 6542.000
+Trades/Fills: 0/0
+Active orders: 10000
+Bid/Ask levels: 100/0
+Checksum: 2121084265672382691
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: modify-price
+Operations: 10000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid price modifications
+Elapsed seconds: 0.010
+Throughput ops/sec: 1009693.053
+Latency ns min/mean/p50/p95/p99/max: 791.000 / 1005.360 / 959.000 / 1208.000 / 1875.000 / 10125.000
+Trades/Fills: 0/0
+Active orders: 10000
+Bid/Ask levels: 100/0
+Checksum: 11742888608276666091
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: crossing-limit-matching
+Operations: 10000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: crossing LIMIT BUY; one fill per operation
+Elapsed seconds: 0.015
+Throughput ops/sec: 648334.995
+Latency ns min/mean/p50/p95/p99/max: 1291.000 / 1551.162 / 1541.000 / 1625.000 / 1917.000 / 89750.000
+Trades/Fills: 10000/10000
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11115450132144216267
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: crossing-limit-matching
+Operations: 10000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: crossing LIMIT BUY; one fill per operation
+Elapsed seconds: 0.016
+Throughput ops/sec: 618148.863
+Latency ns min/mean/p50/p95/p99/max: 1416.000 / 1645.691 / 1584.000 / 1791.000 / 2000.000 / 104375.000
+Trades/Fills: 10000/10000
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11115450132144216267
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: market-matching
+Operations: 10000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: MARKET BUY; one fill per operation
+Elapsed seconds: 0.016
+Throughput ops/sec: 627060.835
+Latency ns min/mean/p50/p95/p99/max: 1292.000 / 1617.669 / 1583.000 / 1750.000 / 2041.000 / 120083.000
+Trades/Fills: 10000/10000
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11115450132144216267
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: mixed
+Operations: 10000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: limit=6029;cancel=1503;modify=1007;cross=944;market=517
+Elapsed seconds: 0.010
+Throughput ops/sec: 995123.893
+Latency ns min/mean/p50/p95/p99/max: 333.000 / 1008.908 / 875.000 / 1750.000 / 1875.000 / 26667.000
+Trades/Fills: 1461/1461
+Active orders: 3065
+Bid/Ask levels: 1/0
+Checksum: 14788153049676925144
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: submit
+Operations: 100000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% resting LIMIT submits
+Elapsed seconds: 0.095
+Throughput ops/sec: 1049990.477
+Latency ns min/mean/p50/p95/p99/max: 750.000 / 968.778 / 917.000 / 1042.000 / 1209.000 / 424833.000
+Trades/Fills: 0/0
+Active orders: 100000
+Bid/Ask levels: 50/50
+Checksum: 5820390899913622285
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: cancel-existing-level
+Operations: 100000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid cancels; shared level remains until final cancel
+Elapsed seconds: 0.104
+Throughput ops/sec: 965673.531
+Latency ns min/mean/p50/p95/p99/max: 583.000 / 1058.164 / 1000.000 / 1375.000 / 1542.000 / 1720875.000
+Trades/Fills: 0/0
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11126445248426326267
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: cancel-final-level
+Operations: 100000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid cancels; each removes a price level
+Elapsed seconds: 0.163
+Throughput ops/sec: 612825.362
+Latency ns min/mean/p50/p95/p99/max: 958.000 / 1661.820 / 1584.000 / 2000.000 / 2291.000 / 2496041.000
+Trades/Fills: 0/0
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11126445248426326267
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: modify-decrease
+Operations: 100000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid decrease modifications
+Elapsed seconds: 0.028
+Throughput ops/sec: 3578532.342
+Latency ns min/mean/p50/p95/p99/max: 208.000 / 290.839 / 292.000 / 334.000 / 375.000 / 10375.000
+Trades/Fills: 0/0
+Active orders: 100000
+Bid/Ask levels: 100/0
+Checksum: 4637880369768744115
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: modify-increase
+Operations: 100000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid increase modifications
+Elapsed seconds: 0.061
+Throughput ops/sec: 1642220.382
+Latency ns min/mean/p50/p95/p99/max: 458.000 / 620.894 / 625.000 / 708.000 / 791.000 / 23750.000
+Trades/Fills: 0/0
+Active orders: 100000
+Bid/Ask levels: 100/0
+Checksum: 2438864247591573699
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: modify-price
+Operations: 100000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid price modifications
+Elapsed seconds: 0.101
+Throughput ops/sec: 988642.563
+Latency ns min/mean/p50/p95/p99/max: 792.000 / 1040.728 / 1000.000 / 1125.000 / 1333.000 / 57708.000
+Trades/Fills: 0/0
+Active orders: 100000
+Bid/Ask levels: 100/0
+Checksum: 5023073525898055347
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: crossing-limit-matching
+Operations: 100000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: crossing LIMIT BUY; one fill per operation
+Elapsed seconds: 0.158
+Throughput ops/sec: 632506.068
+Latency ns min/mean/p50/p95/p99/max: 1291.000 / 1595.606 / 1542.000 / 1667.000 / 1958.000 / 1336875.000
+Trades/Fills: 100000/100000
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11160679642482303963
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: crossing-limit-matching
+Operations: 100000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: crossing LIMIT BUY; one fill per operation
+Elapsed seconds: 0.174
+Throughput ops/sec: 575013.921
+Latency ns min/mean/p50/p95/p99/max: 1375.000 / 1743.467 / 1667.000 / 1917.000 / 2084.000 / 2366833.000
+Trades/Fills: 100000/100000
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11160679642482303963
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: market-matching
+Operations: 100000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: MARKET BUY; one fill per operation
+Elapsed seconds: 0.174
+Throughput ops/sec: 575172.673
+Latency ns min/mean/p50/p95/p99/max: 1375.000 / 1749.143 / 1667.000 / 1917.000 / 2125.000 / 2491292.000
+Trades/Fills: 100000/100000
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11160679642482303963
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: mixed
+Operations: 100000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: limit=59954;cancel=14930;modify=10027;cross=9965;market=5124
+Elapsed seconds: 0.104
+Throughput ops/sec: 963980.465
+Latency ns min/mean/p50/p95/p99/max: 333.000 / 1049.083 / 917.000 / 1792.000 / 1958.000 / 482417.000
+Trades/Fills: 15089/15089
+Active orders: 29935
+Bid/Ask levels: 1/0
+Checksum: 18035042999861659955
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: submit
+Operations: 1000000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% resting LIMIT submits
+Elapsed seconds: 1.018
+Throughput ops/sec: 981915.410
+Latency ns min/mean/p50/p95/p99/max: 708.000 / 1028.629 / 1000.000 / 1125.000 / 1250.000 / 7085792.000
+Trades/Fills: 0/0
+Active orders: 1000000
+Bid/Ask levels: 50/50
+Checksum: 17378540962529922621
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: cancel-existing-level
+Operations: 1000000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid cancels; shared level remains until final cancel
+Elapsed seconds: 1.510
+Throughput ops/sec: 662232.140
+Latency ns min/mean/p50/p95/p99/max: 625.000 / 1513.576 / 1375.000 / 1750.000 / 2000.000 / 41998667.000
+Trades/Fills: 0/0
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11126445248426326267
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: cancel-final-level
+Operations: 1000000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid cancels; each removes a price level
+Elapsed seconds: 2.398
+Throughput ops/sec: 417094.630
+Latency ns min/mean/p50/p95/p99/max: 1041.000 / 2389.436 / 2208.000 / 2750.000 / 3125.000 / 80992500.000
+Trades/Fills: 0/0
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 11126445248426326267
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: modify-decrease
+Operations: 1000000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid decrease modifications
+Elapsed seconds: 0.308
+Throughput ops/sec: 3251176.113
+Latency ns min/mean/p50/p95/p99/max: 208.000 / 308.907 / 292.000 / 375.000 / 417.000 / 28584.000
+Trades/Fills: 0/0
+Active orders: 1000000
+Bid/Ask levels: 100/0
+Checksum: 8890800784567703475
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: modify-increase
+Operations: 1000000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid increase modifications
+Elapsed seconds: 0.659
+Throughput ops/sec: 1517748.072
+Latency ns min/mean/p50/p95/p99/max: 458.000 / 675.699 / 667.000 / 750.000 / 834.000 / 22958.000
+Trades/Fills: 0/0
+Active orders: 1000000
+Bid/Ask levels: 100/0
+Checksum: 17266693853012719763
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: modify-price
+Operations: 1000000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: 100% valid price modifications
+Elapsed seconds: 1.133
+Throughput ops/sec: 882509.132
+Latency ns min/mean/p50/p95/p99/max: 791.000 / 1103.099 / 1042.000 / 1208.000 / 1292.000 / 717333.000
+Trades/Fills: 0/0
+Active orders: 1000000
+Bid/Ask levels: 100/0
+Checksum: 13223665383566114803
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: crossing-limit-matching
+Operations: 1000000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: crossing LIMIT BUY; one fill per operation
+Elapsed seconds: 1.588
+Throughput ops/sec: 629704.664
+Latency ns min/mean/p50/p95/p99/max: 1291.000 / 1590.933 / 1541.000 / 1625.000 / 1792.000 / 23525417.000
+Trades/Fills: 1000000/1000000
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 10459419922102353851
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: crossing-limit-matching
+Operations: 1000000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: crossing LIMIT BUY; one fill per operation
+Elapsed seconds: 2.581
+Throughput ops/sec: 387469.157
+Latency ns min/mean/p50/p95/p99/max: 1583.000 / 2338.213 / 2167.000 / 2542.000 / 3083.000 / 39510541.000
+Trades/Fills: 1000000/1000000
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 10459419922102353851
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: market-matching
+Operations: 1000000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: MARKET BUY; one fill per operation
+Elapsed seconds: 2.221
+Throughput ops/sec: 450310.582
+Latency ns min/mean/p50/p95/p99/max: 1583.000 / 2231.614 / 2125.000 / 2458.000 / 2667.000 / 38917000.000
+Trades/Fills: 1000000/1000000
+Active orders: 0
+Bid/Ask levels: 0/0
+Checksum: 10459419922102353851
+Invariants: PASS
+
+QUANT ENGINE BENCHMARK
+Benchmark: mixed
+Operations: 1000000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: limit=599537;cancel=150159;modify=100134;cross=100193;market=49977
+Elapsed seconds: 1.072
+Throughput ops/sec: 933270.825
+Latency ns min/mean/p50/p95/p99/max: 291.000 / 1081.390 / 917.000 / 1833.000 / 2042.000 / 13205667.000
+Trades/Fills: 150170/150170
+Active orders: 299208
+Bid/Ask levels: 1/0
+Checksum: 10997445773294864847
+Invariants: PASS
+

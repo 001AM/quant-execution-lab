@@ -1,0 +1,18 @@
+QUANT ENGINE BENCHMARK
+Benchmark: best-price-access
+Operations: 1000000
+Seed: 42
+Runs: 3
+Build: Release
+Compiler: Clang 21.0.0 (clang-2100.3.34.2)
+Environment: macOS arm64
+Workload: read best bid and ask with 100 levels
+Elapsed seconds: 0.053
+Throughput ops/sec: 18785001.859
+Latency ns min/mean/p50/p95/p99/max: 0.000 / 68.398 / 83.000 / 84.000 / 84.000 / 16333.000
+Trades/Fills: 0/0
+Active orders: 200
+Bid/Ask levels: 100/100
+Checksum: 4776657317813432951
+Invariants: PASS
+
