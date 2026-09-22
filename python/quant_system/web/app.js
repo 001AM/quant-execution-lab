@@ -59,12 +59,13 @@ function setBusy(button, busy, labelText) {
   label.textContent = busy ? labelText : button.dataset.label;
 }
 
-function dataPayload() {
+function dataPayload(refresh = false) {
   return {
     source: state.source,
     symbol: $("#symbol").value.trim().toUpperCase(),
     exchange: $("#exchange").value,
     period: $("#period").value,
+    refresh,
     data_path: $("#data-path").value.trim(),
     csv_text: state.csvText || null,
   };
@@ -174,7 +175,8 @@ function renderMarket(data) {
   $("#selected-detail").textContent = `${data.exchange} · ${data.bars} daily bars · ${data.currency}`;
   $("#market-symbol").textContent = data.symbol;
   $("#market-source").textContent = data.provider === "yahoo" ? `Yahoo Finance · ${data.exchange} · daily` : "Validated CSV · daily";
-  $("#market-freshness").textContent = `Through ${shortDate(data.end)}`;
+  const refreshTime = data.refreshed_at ? new Date(data.refreshed_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "now";
+  $("#market-freshness").textContent = `Bar ${shortDate(data.end)} · snapshot ${refreshTime}`;
   $("#last-close").textContent = formatCurrency(data.last_close, data.currency, 2);
   $("#price-change").textContent = `${percent(data.price_change)} over this period`;
   $("#price-change").className = `change-pill ${directionClass}`;
@@ -210,7 +212,7 @@ async function loadMarket({ quiet = false } = {}) {
   const button = $("#load-market");
   setBusy(button, true, state.source === "yahoo" ? "Loading market…" : "Reading CSV…");
   try {
-    const data = await post("/api/dataset", dataPayload());
+    const data = await post("/api/dataset", dataPayload(true));
     renderMarket(data);
     await loadRiskSnapshot({ quiet: true });
     if (!quiet) toast(`${data.symbol}: ${data.bars} validated daily bars loaded.`);
@@ -251,8 +253,8 @@ function renderRiskSnapshot(data) {
   $("#risk-equity").textContent = formatCurrency(data.equity, data.currency, 2);
   $("#risk-day-pnl").textContent = formatCurrency(data.daily_pnl, data.currency, 2);
   $("#risk-day-pnl").className = pnlClass(data.daily_pnl);
-  $("#risk-unrealized").textContent = formatCurrency(data.unrealized_pnl, data.currency, 2);
-  $("#risk-unrealized").className = pnlClass(data.unrealized_pnl);
+  $("#risk-unrealized").textContent = formatCurrency(data.net_pnl, data.currency, 2);
+  $("#risk-unrealized").className = pnlClass(data.net_pnl);
   $("#risk-gross").textContent = formatCurrency(data.gross_exposure, data.currency, 0);
   $("#risk-leverage").textContent = `${data.leverage.toFixed(2)}×`;
   $("#risk-var").textContent = formatCurrency(data.var_95, data.currency, 0);
@@ -485,19 +487,21 @@ async function runPortfolio() {
     const data = await post("/api/portfolio", { ...dataPayload(), portfolio_capital: Number($("#portfolio-capital").value), portfolio_quantity: Number($("#portfolio-quantity").value), commission: Number($("#commission").value) });
     const position = data.positions[0];
     const exposureRatio = data.gross_exposure / data.equity;
-    const pnlDirection = data.unrealized_pnl >= 0 ? "gained" : "lost";
-    const positionInsight = `The position ${pnlDirection} ${formatCurrency(Math.abs(data.unrealized_pnl), data.currency, 2)} after commission and now uses ${(exposureRatio * 100).toFixed(1)}% of account equity. ${exposureRatio > .35 ? "This is a concentrated position; review it in the RMS above." : "Exposure remains below the dashboard's default 35% concentration limit."}`;
+    const pnlDirection = data.net_pnl >= 0 ? "gained" : "lost";
+    const positionInsight = `After ${formatCurrency(data.commission, data.currency, 2)} commission, the position ${pnlDirection} ${formatCurrency(Math.abs(data.net_pnl), data.currency, 2)} and now uses ${(exposureRatio * 100).toFixed(1)}% of account equity. ${exposureRatio > .35 ? "This is a concentrated position; review it in the RMS above." : "Exposure remains below the dashboard's default 35% concentration limit."}`;
     const stats = [
       ["Entry price", formatCurrency(data.entry_price, data.currency, 2), ""],
       ["Latest close", formatCurrency(data.market_price, data.currency, 2), ""],
-      ["Position return", percent(data.position_return), data.position_return >= 0 ? "positive" : "negative"],
+      ["Price return", percent(data.position_return), data.position_return >= 0 ? "positive" : "negative"],
       ["Account equity", formatCurrency(data.equity, data.currency, 2), ""],
-      ["Unrealized P&L", formatCurrency(data.unrealized_pnl, data.currency, 2), data.unrealized_pnl >= 0 ? "positive" : "negative"],
+      ["Gross P&L", formatCurrency(data.gross_unrealized_pnl, data.currency, 2), data.gross_unrealized_pnl >= 0 ? "positive" : "negative"],
+      ["Commission", formatCurrency(data.commission, data.currency, 2), ""],
+      ["Net P&L", formatCurrency(data.net_pnl, data.currency, 2), data.net_pnl >= 0 ? "positive" : "negative"],
       ["Gross exposure", formatCurrency(data.gross_exposure, data.currency, 2), ""],
     ];
     $("#output-title").textContent = `${data.symbol} · portfolio snapshot`;
     $("#output-status").textContent = "Real market valuation";
-    $("#execution-output").innerHTML = `<div class="decision-banner ${data.unrealized_pnl >= 0 ? "positive" : "caution"}"><span>Impact</span><div><strong>${data.unrealized_pnl >= 0 ? "Position added to account equity" : "Position reduced account equity"}</strong><p>${positionInsight}</p></div><a href="#overview">Review RMS ↑</a></div><div class="portfolio-grid">${stats.map(([name, value, className]) => `<div class="portfolio-stat"><span>${name}</span><strong class="${className}">${value}</strong></div>`).join("")}<div class="positions"><table><thead><tr><th>Position</th><th>Quantity</th><th>Average entry</th><th>Cash remaining</th></tr></thead><tbody><tr><td>${escapeHtml(position.symbol)}</td><td>${position.quantity}</td><td>${formatCurrency(position.average_price, data.currency, 2)}</td><td>${formatCurrency(data.cash, data.currency, 2)}</td></tr></tbody></table></div></div>`;
+    $("#execution-output").innerHTML = `<div class="decision-banner ${data.net_pnl >= 0 ? "positive" : "caution"}"><span>Impact</span><div><strong>${data.net_pnl >= 0 ? "Position added to account equity" : "Position reduced account equity"}</strong><p>${positionInsight}</p></div><a href="#overview">Review RMS ↑</a></div><div class="portfolio-grid">${stats.map(([name, value, className]) => `<div class="portfolio-stat"><span>${name}</span><strong class="${className}">${value}</strong></div>`).join("")}<div class="positions"><table><thead><tr><th>Position</th><th>Quantity</th><th>Average entry</th><th>Cash remaining</th></tr></thead><tbody><tr><td>${escapeHtml(position.symbol)}</td><td>${position.quantity}</td><td>${formatCurrency(position.average_price, data.currency, 2)}</td><td>${formatCurrency(data.cash, data.currency, 2)}</td></tr></tbody></table></div></div>`;
     toast(`${data.symbol}: position valued through the latest close.`);
   } catch (error) {
     toast(error.message, true);

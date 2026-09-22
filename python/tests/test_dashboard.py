@@ -47,7 +47,7 @@ def test_production_api_serves_health_and_dashboard() -> None:
 
     assert health.status_code == 200
     assert health.json()["status"] == "ok"
-    assert health.json()["version"] == "0.4.1"
+    assert health.json()["version"] == "0.4.3"
     assert page.status_code == 200
     assert "Quant Execution Lab" in page.text
 
@@ -95,6 +95,10 @@ def test_portfolio_snapshot_uses_selected_market_data(
     assert result["entry_price"] == 100.0
     assert result["market_price"] == 112.45
     assert result["equity"] == pytest.approx(100_123.5)
+    assert result["gross_unrealized_pnl"] == pytest.approx(124.5)
+    assert result["commission"] == pytest.approx(1.0)
+    assert result["net_pnl"] == pytest.approx(123.5)
+    assert result["equity"] == pytest.approx(result["initial_capital"] + result["net_pnl"])
     assert len(result["positions"]) == 1
 
 
@@ -117,6 +121,10 @@ def test_risk_snapshot_calculates_limits_from_selected_market(
     assert result["position"]["quantity"] == 10
     assert result["gross_exposure"] == pytest.approx(1_124.5)
     assert result["equity"] == pytest.approx(100_123.5)
+    assert result["gross_unrealized_pnl"] == pytest.approx(124.5)
+    assert result["commission"] == pytest.approx(1.0)
+    assert result["net_pnl"] == pytest.approx(123.5)
+    assert result["equity"] == pytest.approx(result["capital"] + result["net_pnl"])
     assert len(result["limits"]) == 4
     assert result["status"] == "healthy"
 

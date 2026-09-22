@@ -37,7 +37,7 @@ from quant_system.strategy import (
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 WEB_ROOT = Path(__file__).with_name("web")
 MAX_REQUEST_BYTES = 10 * 1024 * 1024
-YAHOO_CACHE_TTL_SECONDS = 15 * 60
+YAHOO_CACHE_TTL_SECONDS = 60
 _YAHOO_CACHE: dict[tuple[str, str], tuple[float, pd.DataFrame]] = {}
 _YAHOO_CACHE_LOCK = threading.Lock()
 
@@ -272,6 +272,12 @@ def _load_data(payload: dict[str, Any]) -> tuple[pd.DataFrame, str, str]:
         period = str(payload.get("period", "6mo")).strip().lower()
         if period not in YAHOO_PERIODS:
             raise ValueError("period must be 1mo, 3mo, 6mo, 1y, 2y, or 5y")
+        refresh = payload.get("refresh", False)
+        if not isinstance(refresh, bool):
+            raise ValueError("refresh must be true or false")
+        if refresh:
+            with _YAHOO_CACHE_LOCK:
+                _YAHOO_CACHE.pop((symbol, period), None)
         data = MarketDataLoader().load_frame(_download_yahoo(symbol, period), symbol=symbol)
         return data, f"Yahoo Finance · {symbol} · {period}", "yahoo"
     if source_mode != "csv":
@@ -339,6 +345,7 @@ def dataset_summary(payload: dict[str, Any]) -> dict[str, Any]:
         "period_high": float(data["high"].max()),
         "period_low": float(data["low"].min()),
         "average_volume": float(data["volume"].mean()),
+        "refreshed_at": pd.Timestamp.now(tz="UTC").isoformat(),
         "prices": [
             {
                 "timestamp": pd.Timestamp(str(row.timestamp)).isoformat(),
@@ -502,6 +509,9 @@ def run_portfolio_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
     )
     portfolio.update_market_price(symbol, market_price)
     portfolio.record_snapshot(mark_time)
+    entry_notional = entry_price * quantity
+    gross_unrealized_pnl = portfolio.unrealized_pnl
+    net_pnl = portfolio.equity - initial_capital
     return {
         "source": source,
         "provider": provider,
@@ -512,11 +522,15 @@ def run_portfolio_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
         "entry_price": entry_price,
         "market_price": market_price,
         "position_return": market_price / entry_price - 1.0,
+        "net_position_return": net_pnl / required_cash,
+        "entry_notional": entry_notional,
         "initial_capital": initial_capital,
         "cash": portfolio.cash,
         "equity": portfolio.equity,
         "realized_pnl": portfolio.gross_realized_pnl,
-        "unrealized_pnl": portfolio.unrealized_pnl,
+        "unrealized_pnl": gross_unrealized_pnl,
+        "gross_unrealized_pnl": gross_unrealized_pnl,
+        "net_pnl": net_pnl,
         "commission": portfolio.total_commission,
         "gross_exposure": portfolio.gross_exposure,
         "net_exposure": portfolio.net_exposure,
@@ -555,7 +569,8 @@ def run_risk_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
     cash = capital - entry_price * quantity - commission
     equity = cash + market_value
     equity_denominator = max(abs(equity), 1e-9)
-    unrealized_pnl = (market_price - entry_price) * quantity - commission
+    gross_unrealized_pnl = (market_price - entry_price) * quantity
+    net_pnl = gross_unrealized_pnl - commission
     daily_pnl = (market_price - previous_close) * quantity
     leverage = market_value / equity_denominator
     position_pct = market_value / equity_denominator
@@ -627,7 +642,10 @@ def run_risk_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
         "cash": cash,
         "equity": equity,
         "daily_pnl": daily_pnl,
-        "unrealized_pnl": unrealized_pnl,
+        "unrealized_pnl": gross_unrealized_pnl,
+        "gross_unrealized_pnl": gross_unrealized_pnl,
+        "net_pnl": net_pnl,
+        "commission": commission,
         "gross_exposure": market_value,
         "net_exposure": market_value,
         "available_capital": cash,
@@ -645,7 +663,9 @@ def run_risk_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
             "entry_price": entry_price,
             "market_price": market_price,
             "market_value": market_value,
-            "unrealized_pnl": unrealized_pnl,
+            "unrealized_pnl": gross_unrealized_pnl,
+            "gross_unrealized_pnl": gross_unrealized_pnl,
+            "net_pnl": net_pnl,
             "position_pct": position_pct,
         },
     }
@@ -710,6 +730,7 @@ class DataRequest(BaseModel):
     symbol: str = Field(default="AAPL", min_length=1, max_length=30)
     exchange: Literal["auto", "us", "nse", "bse"] = "auto"
     period: Literal["1mo", "3mo", "6mo", "1y", "2y", "5y"] = "6mo"
+    refresh: bool = False
     data_path: str = Field(default="data/sample/AAPL.csv", max_length=512)
     csv_text: str | None = Field(default=None, max_length=MAX_REQUEST_BYTES)
 
@@ -757,7 +778,7 @@ class MarketOverviewRequest(BaseModel):
 app = FastAPI(
     title="Quant Execution Lab",
     description="Validated market-data, research, portfolio, and execution simulation API.",
-    version="0.4.1",
+    version="0.4.3",
     docs_url="/api/docs",
     redoc_url=None,
     openapi_url="/api/openapi.json",

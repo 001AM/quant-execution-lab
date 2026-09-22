@@ -169,7 +169,8 @@ The dashboard is one scrollable Risk Management System (RMS) and decision worksp
 header instead of a sidebar:
 
 1. **Risk monitor** — configure account capital, position quantity, concentration, leverage,
-   drawdown, and one-day VaR limits. The RMS derives marked equity, daily and unrealized P&L, gross
+   drawdown, and one-day VaR limits. The RMS derives marked equity, daily P&L, gross unrealized P&L,
+   commission-aware net P&L, gross
    exposure, leverage, 95% historical VaR, limit utilization, breaches, alerts, and a position table
    from the selected instrument's real history.
 2. **Market analysis** — inspect price and volume, understand the period move, and locate the latest
@@ -186,7 +187,7 @@ header instead of a sidebar:
 
 The dashboard is served by a validated FastAPI application on Uvicorn. Request schemas reject
 unexpected fields and invalid ranges, Yahoo responses pass through the canonical data validator,
-and the bounded market-data cache expires entries after 15 minutes. The application runs only
+and the bounded market-data cache expires entries after 60 seconds. The application runs only
 allowlisted workflows and never exposes an arbitrary command shell through the browser.
 
 ## Quick start
@@ -205,7 +206,9 @@ Open [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
 Yahoo Finance is the default source and does not require an API key. Internet access is required
 when fetching a symbol for the first time. Recent results are cached briefly in the dashboard
-process for 15 minutes to avoid repeated downloads. Indian instruments are displayed and backtested in INR;
+process for 60 seconds to limit repeated downloads. Pressing **Load data** explicitly bypasses that
+cache and takes a fresh Yahoo snapshot; dependent RMS, portfolio, backtest, and execution calls then
+share the same snapshot so their calculations reconcile. Indian instruments are displayed and backtested in INR;
 global instruments default to USD.
 
 Interactive API documentation is available at
