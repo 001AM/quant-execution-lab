@@ -9,12 +9,16 @@ description = "Hybrid Python/C++ quantitative trading system"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.141,<1",
     "numpy>=2.0",
     "pandas>=2.2",
+    "uvicorn>=0.53,<1",
+    "yfinance>=1.7,<2",
 ]
 
 [project.optional-dependencies]
 dev = [
+    "httpx>=0.28,<1",
     "mypy>=1.13",
     "pandas-stubs>=2.2",
     "pytest>=8.3",
@@ -27,6 +31,12 @@ package-dir = {"" = "python"}
 
 [tool.setuptools.packages.find]
 where = ["python"]
+
+[tool.setuptools.package-data]
+quant_system = ["web/*"]
+
+[project.scripts]
+quant-dashboard = "quant_system.dashboard:main"
 
 [tool.pytest.ini_options]
 addopts = "--strict-config --strict-markers -ra"
@@ -45,4 +55,3 @@ select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
 python_version = "3.12"
 strict = true
 files = ["python/quant_system"]
-

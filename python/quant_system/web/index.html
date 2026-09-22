@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Run market research, backtests, and execution workflows from one local workspace." />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%230b252c%22/><path d=%22M17 40l10-12 8 7 13-17%22 fill=%22none%22 stroke=%22%2335d39d%22 stroke-width=%226%22 stroke-linecap=%22round%22/></svg>" />
+    <title>Quant Execution Lab</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#" data-go="market" aria-label="Quant Execution Lab">
+          <span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span><strong>Quant</strong><small>Execution Lab</small></span>
+        </a>
+
+        <p class="nav-label">Workspace</p>
+        <nav aria-label="Workspace sections">
+          <button class="nav-link active" data-view="market">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V9m5 9V5m5 13v-7m5 7V3"/></svg>
+            <span><strong>Market</strong><small>Choose your data</small></span>
+            <b>1</b>
+          </button>
+          <button class="nav-link" data-view="backtest">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17l5-5 4 3 7-9M17 6h3v3"/></svg>
+            <span><strong>Backtest</strong><small>Compare strategies</small></span>
+            <b>2</b>
+          </button>
+          <button class="nav-link" data-view="research">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V9m7 10V5m7 14v-6M3 19h18"/></svg>
+            <span><strong>Research</strong><small>Validate out of sample</small></span>
+            <b>3</b>
+          </button>
+          <button class="nav-link" data-view="execution">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2L5 14h7l-1 8 8-12h-7l1-8z"/></svg>
+            <span><strong>Execution</strong><small>Run native engine</small></span>
+            <b>4</b>
+          </button>
+        </nav>
+
+        <div class="sidebar-status">
+          <span class="live-dot"></span>
+          <div><strong>Engine online</strong><small>Runs on this machine</small></div>
+        </div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div>
+            <p class="overline" id="page-overline">Step 1 of 4</p>
+            <h1 id="page-title">Connect market data</h1>
+          </div>
+          <button class="market-chip" id="market-chip" data-go="market">
+            <span class="provider-mark">YF</span>
+            <span><strong id="chip-symbol">AAPL</strong><small id="chip-detail">Connecting to Yahoo Finance…</small></span>
+            <span class="chip-chevron">›</span>
+          </button>
+        </header>
+
+        <section class="view active" id="view-market" aria-labelledby="market-title">
+          <div class="page-intro">
+            <div><p class="overline">Market workspace</p><h2 id="market-title">Start with clean price history</h2></div>
+            <p>Pull daily OHLCV bars directly from Yahoo Finance, or switch to a CSV when you need a private dataset.</p>
+          </div>
+
+          <div class="market-layout">
+            <article class="card source-card">
+              <div class="card-title-row">
+                <span class="step-number">01</span>
+                <div><h3>Choose a source</h3><p>The same data feeds every workflow.</p></div>
+              </div>
+
+              <div class="source-switch" role="radiogroup" aria-label="Data source">
+                <button class="source-option active" data-source="yahoo" role="radio" aria-checked="true">
+                  <span class="source-logo yahoo-logo">Y!</span>
+                  <span><strong>Yahoo Finance</strong><small>Automatic daily history</small></span>
+                  <i></i>
+                </button>
+                <button class="source-option" data-source="csv" role="radio" aria-checked="false">
+                  <span class="source-logo csv-logo">CSV</span>
+                  <span><strong>CSV file</strong><small>Upload or use a local path</small></span>
+                  <i></i>
+                </button>
+              </div>
+
+              <div class="source-fields" id="yahoo-fields">
+                <label class="wide"><span>Ticker symbol</span><input id="symbol" value="AAPL" maxlength="20" autocomplete="off" /></label>
+                <label><span>Exchange</span><select id="exchange"><option value="auto">Auto / global</option><option value="us">US</option><option value="nse">India · NSE</option><option value="bse">India · BSE</option></select></label>
+                <label><span>History</span><select id="period"><option value="1mo">1 month</option><option value="3mo">3 months</option><option value="6mo" selected>6 months</option><option value="1y">1 year</option><option value="2y">2 years</option><option value="5y">5 years</option></select></label>
+                <div class="market-presets wide" aria-label="Indian market examples">
+                  <span>Indian examples</span>
+                  <button data-symbol="RELIANCE" data-exchange="nse">Reliance</button>
+                  <button data-symbol="TCS" data-exchange="nse">TCS</button>
+                  <button data-symbol="NIFTY50" data-exchange="auto">Nifty 50</button>
+                  <button data-symbol="BANKNIFTY" data-exchange="auto">Bank Nifty</button>
+                  <button data-symbol="SENSEX" data-exchange="auto">Sensex</button>
+                </div>
+              </div>
+              <div class="source-fields hidden" id="csv-fields">
+                <label class="wide"><span>Repository path</span><input id="data-path" value="data/sample/AAPL.csv" autocomplete="off" /></label>
+                <label class="wide upload-field"><span>Or upload a CSV</span><input id="csv-file" type="file" accept=".csv,text/csv" /></label>
+              </div>
+
+              <button class="button primary full" id="load-market"><span>Load market data</span><b>→</b></button>
+              <p class="source-note" id="source-note"><span class="secure-icon">✓</span> No API key required. Data is cached briefly in memory.</p>
+            </article>
+
+            <article class="card market-card">
+              <div class="market-card-head">
+                <div class="quote-name"><span class="ticker-avatar" id="ticker-avatar">A</span><div><p id="market-source">Yahoo Finance</p><h3 id="market-symbol">AAPL</h3></div></div>
+                <span class="freshness"><i></i><span id="market-freshness">Loading</span></span>
+              </div>
+              <div class="quote-row">
+                <div><span class="quote-label">Latest close</span><strong id="last-close">—</strong></div>
+                <span class="change-badge" id="price-change">—</span>
+              </div>
+              <div class="market-chart" id="market-chart"><div class="loading-block"></div></div>
+              <div class="market-stats" id="market-stats">
+                <div><span>Period high</span><strong>—</strong></div><div><span>Period low</span><strong>—</strong></div><div><span>Average volume</span><strong>—</strong></div><div><span>Daily bars</span><strong>—</strong></div>
+              </div>
+            </article>
+          </div>
+
+          <article class="pipeline-card">
+            <div><p class="overline">Your workflow</p><h3>One dataset, three decisions</h3></div>
+            <div class="pipeline">
+              <button data-go="backtest"><span class="pipeline-icon mint">↗</span><span><b>Backtest</b><small>Which strategy performed best?</small></span><em>Run next</em></button>
+              <i class="pipeline-line"></i>
+              <button data-go="research"><span class="pipeline-icon blue">⌁</span><span><b>Research</b><small>Does it hold up out of sample?</small></span><em>Validate</em></button>
+              <i class="pipeline-line"></i>
+              <button data-go="execution"><span class="pipeline-icon amber">⚡</span><span><b>Execution</b><small>How would orders be scheduled?</small></span><em>Simulate</em></button>
+            </div>
+          </article>
+        </section>
+
+        <section class="view" id="view-backtest" aria-labelledby="backtest-title" hidden>
+          <div class="page-intro">
+            <div><p class="overline">Strategy comparison</p><h2 id="backtest-title">Test ideas on identical conditions</h2></div>
+            <p>Every strategy sees the same bars, position size, costs, and next-bar execution rules.</p>
+          </div>
+          <div class="context-strip"><span class="context-icon">↗</span><div><strong id="backtest-context">AAPL · Yahoo Finance</strong><small>The selected market dataset will be used below.</small></div><button data-go="market">Change data</button></div>
+
+          <div class="backtest-layout">
+            <article class="card config-card">
+              <div class="card-title-row"><span class="step-number">02</span><div><h3>Configure the run</h3><p>Compare all three or focus on one.</p></div></div>
+              <label><span>Strategy</span><select id="strategy"><option value="all">Compare all strategies</option><option value="momentum">Momentum</option><option value="mean-reversion">Mean reversion</option><option value="ma-crossover">Moving-average crossover</option></select></label>
+              <div class="strategy-explainer" id="strategy-explainer">
+                <span>3</span><p><strong>Fair comparison</strong> Each model runs with the same capital and trading costs.</p>
+              </div>
+              <div class="field-pair">
+                <label><span>Starting capital</span><div class="input-prefix"><b id="capital-prefix">$</b><input id="capital" type="number" value="100000" min="1" step="1000" /></div></label>
+                <label><span>Shares per order</span><input id="quantity" type="number" value="100" min="1" step="1" /></label>
+              </div>
+              <details>
+                <summary>Trading costs &amp; rules <span>⌄</span></summary>
+                <div class="details-grid">
+                  <label><span>Commission</span><input id="commission" type="number" value="0.001" min="0" step="0.0001" /></label>
+                  <label><span>Slippage</span><input id="slippage" type="number" value="0.0005" min="0" step="0.0001" /></label>
+                </div>
+                <label class="toggle-row"><input id="allow-short" type="checkbox" checked /><span><i></i><b>Allow short selling</b></span></label>
+              </details>
+              <button class="button primary full" id="run-backtest"><span>Run strategy backtest</span><b>→</b></button>
+            </article>
+
+            <div class="results-column" id="backtest-results">
+              <article class="card guided-empty">
+                <span class="empty-graphic"><i></i><i></i><i></i><i></i></span>
+                <h3>Results will build here</h3>
+                <p>Configure the run, then compare return, risk, equity curves, and fills in one view.</p>
+                <div class="empty-checks"><span>✓ Next-bar fills</span><span>✓ Costs included</span><span>✓ No look-ahead</span></div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="view" id="view-research" aria-labelledby="research-title" hidden>
+          <div class="page-intro">
+            <div><p class="overline">Robustness check</p><h2 id="research-title">Walk-forward research</h2></div>
+            <p>Tune on past data, freeze the best parameters, and test them only on the next unseen window.</p>
+          </div>
+          <article class="method-card">
+            <div class="method-step"><span>1</span><div><b>Train</b><small>Score parameter candidates</small></div></div><i></i>
+            <div class="method-step"><span>2</span><div><b>Freeze</b><small>Lock the best settings</small></div></div><i></i>
+            <div class="method-step"><span>3</span><div><b>Test</b><small>Run on unseen bars</small></div></div><i></i>
+            <div class="method-step"><span>4</span><div><b>Roll forward</b><small>Repeat without leakage</small></div></div>
+          </article>
+          <div class="research-controls">
+            <div><span class="context-icon violet">⌁</span><div><strong id="research-context">AAPL · Yahoo Finance</strong><small>Momentum grid: lookback 3, 5, 8 · threshold 0.5%, 1.0%</small></div></div>
+            <label><span>Training bars</span><input id="train-size" type="number" value="60" min="2" /></label>
+            <label><span>Test bars</span><input id="test-size" type="number" value="20" min="2" /></label>
+            <button class="button primary" id="run-walk-forward"><span>Run validation</span><b>→</b></button>
+          </div>
+          <div id="research-results">
+            <article class="card guided-empty horizontal"><span class="empty-graphic research-graphic"><i></i><i></i><i></i><i></i></span><div><h3>Ready for an honest test</h3><p>Run validation to see only out-of-sample returns, selected parameters, and risk.</p></div></article>
+          </div>
+        </section>
+
+        <section class="view" id="view-execution" aria-labelledby="execution-title" hidden>
+          <div class="page-intro">
+            <div><p class="overline">Order simulation</p><h2 id="execution-title">Execution &amp; portfolio engine</h2></div>
+            <p>Use the selected market's validated price history to schedule a native parent order or value a real-data portfolio scenario.</p>
+          </div>
+          <div class="context-strip"><span class="context-icon amber">⚡</span><div><strong id="execution-context">Load a market instrument first</strong><small id="execution-context-detail">Execution uses the latest validated close; portfolio P&amp;L spans the loaded period.</small></div><button data-go="market">Change data</button></div>
+          <div class="execution-grid">
+            <article class="algo-card twap-card">
+              <div class="algo-top"><span>TWAP</span><small>Time weighted</small></div>
+              <div class="slice-visual equal"><i></i><i></i><i></i><i></i></div>
+              <p>Splits quantity evenly across time windows.</p>
+            </article>
+            <article class="algo-card vwap-card">
+              <div class="algo-top"><span>VWAP</span><small>Volume weighted</small></div>
+              <div class="slice-visual weighted"><i></i><i></i><i></i><i></i></div>
+              <p>Follows a supplied market-volume profile.</p>
+            </article>
+            <article class="algo-card pov-card">
+              <div class="algo-top"><span>POV</span><small>Participation rate</small></div>
+              <div class="slice-visual pulse-bars"><i></i><i></i><i></i><i></i></div>
+              <p>Trades a fixed share of observed volume.</p>
+            </article>
+          </div>
+          <div class="execution-actions">
+            <article class="card run-card dark-card">
+              <span class="step-number inverted">04</span><div><p class="overline">C++ engine · selected market</p><h3>Schedule a parent order</h3><p id="execution-market-copy">Load market data to set the symbol and reference price.</p></div>
+              <div class="run-inputs dark-inputs"><label><span>Parent quantity</span><input id="execution-quantity" type="number" value="1000" min="4" max="10000000" /></label><div><span>Reference</span><strong id="execution-reference">—</strong></div></div>
+              <button class="button bright" id="run-execution"><span>Run TWAP · VWAP · POV</span><b>⚡</b></button>
+            </article>
+            <article class="card run-card">
+              <span class="step-number">04B</span><div><p class="overline">Python accounting · selected market</p><h3>Value a buy-and-hold position</h3><p>Buys at the first loaded open, marks at the latest close, and reconciles cash, P&amp;L, equity, and exposure.</p></div>
+              <div class="run-inputs"><label><span>Starting capital</span><input id="portfolio-capital" type="number" value="100000" min="1" step="1000" /></label><label><span>Position quantity</span><input id="portfolio-quantity" type="number" value="10" min="1" /></label></div>
+              <button class="button secondary" id="run-portfolio"><span>Value selected position</span><b>→</b></button>
+            </article>
+          </div>
+          <article class="card output-card" id="output-card">
+            <div class="output-head"><div><p class="overline">Engine output</p><h3 id="output-title">Waiting for a run</h3></div><span class="output-status">Ready</span></div>
+            <div id="execution-output" class="execution-output"><p>Choose an action above. Results stay local to this dashboard.</p></div>
+          </article>
+        </section>
+
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      </main>
+    </div>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
