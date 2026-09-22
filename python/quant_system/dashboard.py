@@ -9,6 +9,7 @@ import subprocess
 import threading
 import time
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -75,6 +76,28 @@ INDIAN_INDEX_ALIASES = {
     "BANKNIFTY": "^NSEBANK",
     "NIFTYBANK": "^NSEBANK",
     "SENSEX": "^BSESN",
+}
+
+INDIAN_MARKET_INDICES = {
+    "Nifty 50": "^NSEI",
+    "Sensex": "^BSESN",
+    "Bank Nifty": "^NSEBANK",
+}
+
+# Equal-weight baskets make sector comparison reliable when the free provider does
+# not expose enough history for an official sector index. Constituents are shown
+# in the UI so the proxy is explicit rather than presented as an exchange index.
+INDIAN_SECTOR_BASKETS = {
+    "Banking & Finance": ("HDFCBANK.NS", "ICICIBANK.NS", "SBIN.NS"),
+    "Information Technology": ("TCS.NS", "INFY.NS", "HCLTECH.NS"),
+    "Energy": ("RELIANCE.NS", "ONGC.NS", "NTPC.NS"),
+    "Automobiles": ("MARUTI.NS", "M&M.NS", "EICHERMOT.NS"),
+    "Pharmaceuticals": ("SUNPHARMA.NS", "DRREDDY.NS", "CIPLA.NS"),
+    "Consumer Staples": ("HINDUNILVR.NS", "ITC.NS", "NESTLEIND.NS"),
+    "Metals": ("TATASTEEL.NS", "HINDALCO.NS", "JSWSTEEL.NS"),
+    "Real Estate": ("DLF.NS", "GODREJPROP.NS", "OBEROIRLTY.NS"),
+    "Industrials": ("LT.NS", "SIEMENS.NS", "ABB.NS"),
+    "Telecom": ("BHARTIARTL.NS", "INDUSTOWER.NS", "TATACOMM.NS"),
 }
 
 
@@ -145,11 +168,96 @@ def _download_yahoo(symbol: str, period: str) -> pd.DataFrame:
     canonical.insert(1, "symbol", symbol)
     result = cast(pd.DataFrame, canonical.dropna().copy(deep=True))
     with _YAHOO_CACHE_LOCK:
-        if len(_YAHOO_CACHE) >= 32:
+        if len(_YAHOO_CACHE) >= 96:
             oldest_key = min(_YAHOO_CACHE, key=lambda item: _YAHOO_CACHE[item][0])
             del _YAHOO_CACHE[oldest_key]
         _YAHOO_CACHE[key] = (now + YAHOO_CACHE_TTL_SECONDS, result.copy(deep=True))
     return result
+
+
+def _market_instrument(symbol: str, period: str) -> dict[str, Any]:
+    data = _download_yahoo(symbol, period)
+    first_close = float(data["close"].iloc[0])
+    last_close = float(data["close"].iloc[-1])
+    return {
+        "symbol": symbol,
+        "last_close": last_close,
+        "change": last_close / first_close - 1.0,
+        "bars": len(data),
+        "as_of": pd.Timestamp(data["timestamp"].iloc[-1]).isoformat(),
+    }
+
+
+def indian_market_overview(period: str = "1mo") -> dict[str, Any]:
+    """Return broad-index and transparent NSE sector-basket performance."""
+
+    if period not in {"1mo", "3mo", "6mo", "1y"}:
+        raise ValueError("sector period must be 1mo, 3mo, 6mo, or 1y")
+
+    requested_symbols = set(INDIAN_MARKET_INDICES.values())
+    for constituents in INDIAN_SECTOR_BASKETS.values():
+        requested_symbols.update(constituents)
+
+    instruments: dict[str, dict[str, Any]] = {}
+    failures: dict[str, str] = {}
+    with ThreadPoolExecutor(max_workers=8, thread_name_prefix="market-overview") as pool:
+        futures = {
+            pool.submit(_market_instrument, symbol, period): symbol
+            for symbol in requested_symbols
+        }
+        for future in as_completed(futures):
+            symbol = futures[future]
+            try:
+                instruments[symbol] = future.result()
+            except (ValueError, TypeError, OSError) as exc:
+                failures[symbol] = str(exc)
+
+    indices = [
+        {"name": name, **instruments[symbol]}
+        for name, symbol in INDIAN_MARKET_INDICES.items()
+        if symbol in instruments
+    ]
+    sectors: list[dict[str, Any]] = []
+    for name, symbols in INDIAN_SECTOR_BASKETS.items():
+        members = [
+            {"symbol": symbol, **instruments[symbol]}
+            for symbol in symbols
+            if symbol in instruments
+        ]
+        if not members:
+            continue
+        members.sort(key=lambda member: member["change"], reverse=True)
+        sectors.append(
+            {
+                "name": name,
+                "change": sum(member["change"] for member in members) / len(members),
+                "breadth": sum(member["change"] >= 0 for member in members) / len(members),
+                "available": len(members),
+                "total": len(symbols),
+                "constituents": members,
+            }
+        )
+    sectors.sort(key=lambda sector: sector["change"], reverse=True)
+    available_members = sum(sector["available"] for sector in sectors)
+    advancing_members = sum(
+        member["change"] >= 0
+        for sector in sectors
+        for member in sector["constituents"]
+    )
+    timestamps = [item["as_of"] for item in instruments.values()]
+    return {
+        "provider": "Yahoo Finance",
+        "period": period,
+        "currency": "INR",
+        "methodology": "Equal-weight return of three large NSE companies per sector",
+        "as_of": max(timestamps) if timestamps else None,
+        "indices": indices,
+        "sectors": sectors,
+        "market_breadth": advancing_members / available_members if available_members else None,
+        "available_instruments": len(instruments),
+        "requested_instruments": len(requested_symbols),
+        "failures": failures,
+    }
 
 
 def _load_data(payload: dict[str, Any]) -> tuple[pd.DataFrame, str, str]:
@@ -510,10 +618,16 @@ class ExecutionRequest(DataRequest):
     execution_quantity: int = Field(default=1_000, ge=4)
 
 
+class MarketOverviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    period: Literal["1mo", "3mo", "6mo", "1y"] = "1mo"
+
+
 app = FastAPI(
     title="Quant Execution Lab",
     description="Validated market-data, research, portfolio, and execution simulation API.",
-    version="0.2.0",
+    version="0.3.0",
     docs_url="/api/docs",
     redoc_url=None,
     openapi_url="/api/openapi.json",
@@ -544,6 +658,11 @@ def api_health() -> dict[str, object]:
 @app.post("/api/dataset")
 def api_dataset(request: DataRequest) -> dict[str, Any]:
     return dataset_summary(request.model_dump())
+
+
+@app.post("/api/market-overview")
+def api_market_overview(request: MarketOverviewRequest) -> dict[str, Any]:
+    return indian_market_overview(request.period)
 
 
 @app.post("/api/backtest")

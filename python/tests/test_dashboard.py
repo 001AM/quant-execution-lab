@@ -11,6 +11,7 @@ from quant_system.dashboard import (
     _currency_for_symbol,
     _normalize_yahoo_symbol,
     dataset_summary,
+    indian_market_overview,
     run_backtest,
     run_portfolio_snapshot,
     run_walk_forward,
@@ -45,7 +46,7 @@ def test_production_api_serves_health_and_dashboard() -> None:
 
     assert health.status_code == 200
     assert health.json()["status"] == "ok"
-    assert health.json()["version"] == "0.2.0"
+    assert health.json()["version"] == "0.3.0"
     assert page.status_code == 200
     assert "Quant Execution Lab" in page.text
 
@@ -123,6 +124,37 @@ def test_yahoo_source_is_normalized_for_dashboard(monkeypatch: pytest.MonkeyPatc
     assert summary["source"] == "Yahoo Finance · MSFT · 3mo"
     assert summary["bars"] == 3
     assert len(summary["prices"]) == 3
+
+
+def test_indian_market_overview_builds_real_sector_baskets(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def downloaded(symbol: str, period: str) -> pd.DataFrame:
+        assert period == "1mo"
+        symbol_offset = sum(ord(character) for character in symbol) % 8
+        first = 100.0 + symbol_offset
+        last = first + symbol_offset - 2
+        return pd.DataFrame(
+            {
+                "timestamp": pd.to_datetime(["2026-01-02", "2026-01-30"]),
+                "symbol": [symbol, symbol],
+                "open": [first, last],
+                "high": [first + 1, last + 1],
+                "low": [first - 1, last - 1],
+                "close": [first, last],
+                "volume": [1_000.0, 1_200.0],
+            }
+        )
+
+    monkeypatch.setattr(dashboard, "_download_yahoo", downloaded)
+
+    overview = indian_market_overview("1mo")
+
+    assert len(overview["indices"]) == 3
+    assert len(overview["sectors"]) == 10
+    assert overview["available_instruments"] == overview["requested_instruments"]
+    assert all(sector["available"] == 3 for sector in overview["sectors"])
+    assert overview["methodology"].startswith("Equal-weight")
 
 
 @pytest.mark.parametrize(

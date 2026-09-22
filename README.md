@@ -55,6 +55,11 @@ Any NSE/BSE security or index available through Yahoo Finance can be requested w
 ticker; exchange availability and history length remain provider-dependent.
 CSV upload and repository-local CSV paths remain available for offline or private datasets.
 
+The India sector map compares ten transparent, equal-weight baskets covering banking and finance,
+IT, energy, automobiles, pharmaceuticals, consumer staples, metals, real estate, industrials, and
+telecom. Each basket uses three named large NSE companies and reports both basket return and member
+breadth. This avoids presenting incomplete free-provider sector-index history as authoritative.
+
 Every source crosses the same validation boundary and becomes this canonical schema:
 
 ```text
@@ -160,14 +165,16 @@ hybrid Newton/bisection implied-volatility solver.
 
 ## Dashboard
 
-The dashboard organizes the project into four guided sections:
+The dashboard is one scrollable decision workspace with a compact header instead of a sidebar:
 
-1. **Market** — load Yahoo Finance history or a CSV and inspect price, volume, range, and coverage.
-2. **Backtest** — configure capital, order size, costs, and short selling; compare strategies and
-   equity curves.
-3. **Research** — run momentum walk-forward validation and inspect out-of-sample folds.
-4. **Execution** — send the selected symbol, latest validated close, and requested quantity to the
-   compiled TWAP/VWAP/POV simulator, or value a position over the selected market period.
+1. **Overview** — load Yahoo Finance history or a CSV, see price and volume, understand the period
+   move, and locate the latest close inside its high-low range.
+2. **India sector map** — compare Nifty 50, Sensex, and Bank Nifty alongside ten NSE sector baskets,
+   constituent returns, market breadth, provider coverage, and 1M/3M/6M/1Y views.
+3. **Strategy lab** — configure capital, order size, costs, and short selling; compare strategies and
+   equity curves, then run walk-forward validation on unseen windows.
+4. **Execution and portfolio** — compare TWAP, VWAP, and POV through graphical fill summaries and
+   detailed native output, or value a position using the selected instrument's real price history.
 
 The dashboard is served by a validated FastAPI application on Uvicorn. Request schemas reject
 unexpected fields and invalid ranges, Yahoo responses pass through the canonical data validator,
