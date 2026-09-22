@@ -176,10 +176,13 @@ header instead of a sidebar:
    close inside its high-low range.
 3. **India sector map** — compare Nifty 50, Sensex, and Bank Nifty alongside ten NSE sector baskets,
    constituent returns, market breadth, provider coverage, and 1M/3M/6M/1Y views.
-4. **Strategy lab** — configure capital, order size, costs, and short selling; compare strategies and
-   equity curves, then run walk-forward validation on unseen windows.
-5. **Execution and portfolio** — compare TWAP, VWAP, and POV through graphical fill summaries and
-   detailed native output, or value a position using the selected instrument's real price history.
+4. **Strategy lab** — understand when each model is useful, compare it with buy-and-hold, and read a
+   plain-language verdict covering excess return, Sharpe ratio, drawdown, and sample size. A separate
+   walk-forward verdict reports how many unseen windows were positive.
+5. **Execution and portfolio** — follow a three-step parent-order workflow, compare TWAP, VWAP, and
+   POV through graphical fill summaries, and receive an interpretation of differences or identical
+   outcomes. Real symbol/price inputs are labelled separately from simulated liquidity and fills.
+   Portfolio output explains P&L and concentration before linking back to the RMS.
 
 The dashboard is served by a validated FastAPI application on Uvicorn. Request schemas reject
 unexpected fields and invalid ranges, Yahoo responses pass through the canonical data validator,

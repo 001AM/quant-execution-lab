@@ -47,7 +47,7 @@ def test_production_api_serves_health_and_dashboard() -> None:
 
     assert health.status_code == 200
     assert health.json()["status"] == "ok"
-    assert health.json()["version"] == "0.4.0"
+    assert health.json()["version"] == "0.4.1"
     assert page.status_code == 200
     assert "Quant Execution Lab" in page.text
 

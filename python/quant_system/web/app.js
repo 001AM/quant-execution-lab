@@ -341,11 +341,21 @@ function resultStat(name, value, className = "") {
   return `<div class="result-stat"><span>${name}</span><strong class="${className}">${value}</strong></div>`;
 }
 
+function strategyVerdict(run) {
+  const excess = run.total_return - run.benchmark_return;
+  if (run.fills < 4) return ["Not enough trades", "The strategy produced too few fills for a reliable comparison. Load more history before judging it.", "caution"];
+  if (run.total_return > 0 && excess > 0 && (run.sharpe_ratio || 0) > 0) return ["Promising in this sample", `It beat buy-and-hold by ${percent(excess)} and produced a positive risk-adjusted return. Validate it on unseen data next.`, "positive"];
+  if (run.total_return > 0 && excess <= 0) return ["Positive, but behind the benchmark", `The strategy gained ${percent(run.total_return)}, but simply holding returned ${percent(run.benchmark_return)}.`, "caution"];
+  return ["Did not work in this sample", `The strategy returned ${percent(run.total_return)} after costs. Review the market regime or test a different model.`, "negative"];
+}
+
 function renderBacktest(data) {
   const winner = [...data.runs].sort((a, b) => b.total_return - a.total_return)[0];
+  const [verdict, explanation, verdictClass] = strategyVerdict(winner);
   const maxMagnitude = Math.max(...data.runs.map((run) => Math.abs(run.total_return)), .001);
   $("#backtest-results").innerHTML = `
     <article class="panel result-hero">
+      <div class="decision-banner ${verdictClass}"><span>Decision</span><div><strong>${verdict}</strong><p>${explanation}</p></div><a href="#walk-forward-controls">Validate next ↓</a></div>
       <div class="winner-row"><div class="winner-name"><span class="winner-icon">★</span><div><p>Best result in this run</p><h3>${escapeHtml(titleCase(winner.strategy))}</h3></div></div><div class="winner-return"><span>Total return</span><strong class="${winner.total_return >= 0 ? "positive" : "negative"}">${percent(winner.total_return)}</strong></div></div>
       <div class="result-stats">
         ${resultStat("Ending equity", formatCurrency(winner.ending_equity, data.currency))}
@@ -357,9 +367,13 @@ function renderBacktest(data) {
       <div class="data-chart" id="backtest-chart"></div>
     </article>
     <article class="panel comparison-panel">
-      <div class="result-panel-head"><h3>Strategy comparison</h3><span class="data-badge">Costs included</span></div>
+      <div class="result-panel-head"><div><h3>Compare the evidence</h3><small>Higher return and Sharpe are better; a smaller drawdown is better.</small></div><span class="data-badge">Costs included</span></div>
       <div class="strategy-bars">${data.runs.map((run) => `<div class="strategy-bar-row"><span>${escapeHtml(titleCase(run.strategy))}</span><div class="bar-track"><i class="${run.total_return >= 0 ? "positive" : "negative"}" style="width:${Math.max(Math.abs(run.total_return) / maxMagnitude * 48, 1)}%"></i></div><b class="${run.total_return >= 0 ? "positive" : "negative"}">${percent(run.total_return)}</b></div>`).join("")}</div>
-      <table><thead><tr><th>Strategy</th><th>Completed fills</th><th>Annual volatility</th><th>Rejected orders</th></tr></thead><tbody>${data.runs.map((run) => `<tr><td>${escapeHtml(titleCase(run.strategy))}</td><td>${run.fills}</td><td>${percent(run.volatility)}</td><td>${run.rejected_orders}</td></tr>`).join("")}</tbody></table>
+      <div class="strategy-scorecards">${data.runs.map((run) => {
+        const excess = run.total_return - run.benchmark_return;
+        return `<article><header><strong>${escapeHtml(titleCase(run.strategy))}</strong><span class="${run.total_return >= 0 ? "positive" : "negative"}">${percent(run.total_return)}</span></header><div><span>vs hold<b class="${excess >= 0 ? "positive" : "negative"}">${percent(excess)}</b></span><span>Sharpe<b>${run.sharpe_ratio == null ? "—" : ratio.format(run.sharpe_ratio)}</b></span><span>Drawdown<b class="negative">${percent(run.max_drawdown)}</b></span><span>Fills<b>${run.fills}</b></span></div></article>`;
+      }).join("")}</div>
+      <details class="result-details"><summary>View volatility and rejected orders <span>⌄</span></summary><table><thead><tr><th>Strategy</th><th>Completed fills</th><th>Annual volatility</th><th>Rejected orders</th></tr></thead><tbody>${data.runs.map((run) => `<tr><td>${escapeHtml(titleCase(run.strategy))}</td><td>${run.fills}</td><td>${percent(run.volatility)}</td><td>${run.rejected_orders}</td></tr>`).join("")}</tbody></table></details>
     </article>`;
   renderLineChart("#backtest-chart", data.runs.map((run) => ({ points: run.equity.map((point) => ({ value: point.value, label: new Date(point.timestamp).toLocaleDateString("en-IN", { month: "short", year: "2-digit" }) })) })), { label: "Strategy equity curves", currencyCode: data.currency });
 }
@@ -379,7 +393,13 @@ async function runBacktest() {
 }
 
 function renderResearch(data) {
+  const positiveFolds = data.folds.filter((fold) => fold.test_return > 0).length;
+  const requiredFolds = Math.ceil(data.folds.length * .6);
+  const passed = data.performance.total_return > 0 && positiveFolds >= requiredFolds;
+  const verdict = passed ? "The result held up better on unseen data" : data.performance.total_return > 0 ? "Positive return, but evidence is mixed" : "The result did not hold up on unseen data";
+  const explanation = `${positiveFolds} of ${data.folds.length} unseen windows were positive. ${passed ? "This supports further testing, not automatic deployment." : "Avoid treating the in-sample winner as production-ready."}`;
   $("#research-results").innerHTML = `
+    <article class="validation-verdict ${passed ? "positive" : "caution"}"><span>${passed ? "PASS" : "REVIEW"}</span><div><strong>${verdict}</strong><p>${explanation}</p></div></article>
     <div class="metric-ribbon">
       ${resultStat("Out-of-sample return", percent(data.performance.total_return), data.performance.total_return >= 0 ? "positive" : "negative")}
       ${resultStat("Ending equity", formatCurrency(data.performance.ending_equity, data.currency))}
@@ -433,10 +453,19 @@ async function runExecution() {
   try {
     const data = await post("/api/execution", { ...dataPayload(), execution_quantity: Number($("#execution-quantity").value) });
     const reports = parseExecutionReports(data.output);
+    const algorithmPurpose = { TWAP: "Predictable timing", VWAP: "Follow market volume", POV: "Control participation" };
+    const comparable = new Set(reports.map((report) => `${report.executed}|${report.slippage}|${report.fees}`)).size === 1;
+    const decision = comparable
+      ? "All schedules produced the same fill quality"
+      : "The schedules produced different execution quality";
+    const explanation = comparable
+      ? "Simulated liquidity was sufficient for every method, so fill rate, slippage, and fees matched. Choose by scheduling objective, then stress-test thinner liquidity before relying on the result."
+      : "Prefer the method that completes the order with lower absolute slippage and acceptable fees, then test it across different liquidity assumptions.";
     $("#output-title").textContent = `${data.symbol} · execution comparison`;
     $("#output-status").textContent = "Native engine complete";
     $("#execution-output").innerHTML = `
-      <div class="execution-results">${reports.map((report) => `<article class="execution-result"><header><strong>${escapeHtml(report.algorithm)}</strong><span>${escapeHtml(report.status)}</span></header><b>${report.requested ? Math.round(report.executed / report.requested * 100) : 0}%</b><small>of parent quantity filled</small><div class="execution-mini"><div><span>Child orders</span><strong>${escapeHtml(report.children)}</strong></div><div><span>Fills</span><strong>${escapeHtml(report.fills)}</strong></div><div><span>Slippage</span><strong>${escapeHtml(report.slippage)} bps</strong></div><div><span>Fees</span><strong>${escapeHtml(report.fees)} ticks</strong></div></div></article>`).join("")}</div>
+      <div class="decision-banner execution-decision"><span>Meaning</span><div><strong>${decision}</strong><p>${explanation}</p></div><em>Real reference ${formatCurrency(data.market_price, data.currency, 2)}</em></div>
+      <div class="execution-results">${reports.map((report) => `<article class="execution-result"><header><div><strong>${escapeHtml(report.algorithm)}</strong><small>${algorithmPurpose[report.algorithm] || "Order schedule"}</small></div><span>${escapeHtml(report.status)}</span></header><b>${report.requested ? Math.round(report.executed / report.requested * 100) : 0}%</b><small>of parent quantity filled</small><div class="execution-mini"><div><span>Child orders</span><strong>${escapeHtml(report.children)}</strong></div><div><span>Completed fills</span><strong>${escapeHtml(report.fills)}</strong></div><div><span>Arrival slippage</span><strong>${escapeHtml(report.slippage)} bps</strong></div><div><span>Simulated fees</span><strong>${escapeHtml(report.fees)}</strong></div></div></article>`).join("")}</div>
       <details class="raw-output"><summary>View detailed native-engine report <span>⌄</span></summary><pre>${escapeHtml(data.output)}</pre></details>`;
     toast(`${data.symbol}: execution comparison complete.`);
   } catch (error) {
@@ -455,6 +484,9 @@ async function runPortfolio() {
   try {
     const data = await post("/api/portfolio", { ...dataPayload(), portfolio_capital: Number($("#portfolio-capital").value), portfolio_quantity: Number($("#portfolio-quantity").value), commission: Number($("#commission").value) });
     const position = data.positions[0];
+    const exposureRatio = data.gross_exposure / data.equity;
+    const pnlDirection = data.unrealized_pnl >= 0 ? "gained" : "lost";
+    const positionInsight = `The position ${pnlDirection} ${formatCurrency(Math.abs(data.unrealized_pnl), data.currency, 2)} after commission and now uses ${(exposureRatio * 100).toFixed(1)}% of account equity. ${exposureRatio > .35 ? "This is a concentrated position; review it in the RMS above." : "Exposure remains below the dashboard's default 35% concentration limit."}`;
     const stats = [
       ["Entry price", formatCurrency(data.entry_price, data.currency, 2), ""],
       ["Latest close", formatCurrency(data.market_price, data.currency, 2), ""],
@@ -465,7 +497,7 @@ async function runPortfolio() {
     ];
     $("#output-title").textContent = `${data.symbol} · portfolio snapshot`;
     $("#output-status").textContent = "Real market valuation";
-    $("#execution-output").innerHTML = `<div class="portfolio-grid">${stats.map(([name, value, className]) => `<div class="portfolio-stat"><span>${name}</span><strong class="${className}">${value}</strong></div>`).join("")}<div class="positions"><table><thead><tr><th>Position</th><th>Quantity</th><th>Average entry</th><th>Cash remaining</th></tr></thead><tbody><tr><td>${escapeHtml(position.symbol)}</td><td>${position.quantity}</td><td>${formatCurrency(position.average_price, data.currency, 2)}</td><td>${formatCurrency(data.cash, data.currency, 2)}</td></tr></tbody></table></div></div>`;
+    $("#execution-output").innerHTML = `<div class="decision-banner ${data.unrealized_pnl >= 0 ? "positive" : "caution"}"><span>Impact</span><div><strong>${data.unrealized_pnl >= 0 ? "Position added to account equity" : "Position reduced account equity"}</strong><p>${positionInsight}</p></div><a href="#overview">Review RMS ↑</a></div><div class="portfolio-grid">${stats.map(([name, value, className]) => `<div class="portfolio-stat"><span>${name}</span><strong class="${className}">${value}</strong></div>`).join("")}<div class="positions"><table><thead><tr><th>Position</th><th>Quantity</th><th>Average entry</th><th>Cash remaining</th></tr></thead><tbody><tr><td>${escapeHtml(position.symbol)}</td><td>${position.quantity}</td><td>${formatCurrency(position.average_price, data.currency, 2)}</td><td>${formatCurrency(data.cash, data.currency, 2)}</td></tr></tbody></table></div></div>`;
     toast(`${data.symbol}: position valued through the latest close.`);
   } catch (error) {
     toast(error.message, true);

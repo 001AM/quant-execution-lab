@@ -161,9 +161,14 @@
 
       <section class="dashboard-section" id="strategy-lab">
         <div class="section-heading">
-          <span class="eyebrow">Strategy lab</span><h2>Compare trading ideas under the same conditions</h2><p>All strategies use the selected instrument, capital, position size, costs, and next-bar execution rules. This makes the comparison fair and easier to interpret.</p>
+          <span class="eyebrow">Strategy decision</span><h2>Which trading idea performs best after costs?</h2><p>Run each model on the same instrument and assumptions. The result explains performance, downside risk, benchmark difference, and whether the idea survives unseen data.</p>
         </div>
         <div class="context-banner"><span>DATA</span><div><small>Current test dataset</small><strong id="backtest-context">Waiting for market data</strong></div><a href="#overview">Change instrument</a></div>
+        <div class="strategy-primer" aria-label="Strategy guide">
+          <article><span class="strategy-symbol momentum">↗</span><div><strong>Momentum</strong><p>Follows recent strength or weakness.</p><small>Useful when price trends persist.</small></div></article>
+          <article><span class="strategy-symbol reversion">↔</span><div><strong>Mean reversion</strong><p>Trades unusually stretched prices.</p><small>Useful in range-bound markets.</small></div></article>
+          <article><span class="strategy-symbol crossover">⌁</span><div><strong>Moving averages</strong><p>Confirms a change in the broader trend.</p><small>Useful for slower trend signals.</small></div></article>
+        </div>
         <div class="lab-grid">
           <article class="panel config-panel">
             <div class="panel-header compact"><div><span class="panel-kicker">Test setup</span><h3>Backtest controls</h3></div></div>
@@ -184,13 +189,13 @@
             <button class="primary-button full" id="run-backtest"><span>Run backtest</span><b>→</b></button>
           </article>
           <div class="results-column" id="backtest-results">
-            <article class="panel empty-state"><span class="empty-bars"><i></i><i></i><i></i><i></i></span><div><h3>Your comparison will appear here</h3><p>Run the backtest to compare return, drawdown, risk, equity curves, and completed fills.</p></div></article>
+            <article class="panel empty-state strategy-empty"><span class="empty-bars"><i></i><i></i><i></i><i></i></span><div><h3>Run once to answer four questions</h3><ul><li>Did the strategy beat simply holding the instrument?</li><li>How much did the account fall during its worst period?</li><li>Was return high enough for the volatility taken?</li><li>Did the signal create enough completed trades to evaluate?</li></ul></div></article>
           </div>
         </div>
 
-        <article class="panel validation-panel">
+        <article class="panel validation-panel" id="walk-forward-controls">
           <div class="validation-copy">
-            <span class="panel-kicker">Robustness check</span><h3>Walk-forward validation</h3><p>Train on older bars, freeze the chosen parameters, then test only on the next unseen window. This reduces the risk of trusting an over-fitted strategy.</p>
+            <span class="panel-kicker">Second decision · robustness</span><h3>Did the strategy work on data it never saw?</h3><p>Walk-forward validation trains on older bars, locks the settings, and then measures only the next unseen window. Positive results across several folds are stronger evidence than one backtest.</p>
             <div class="validation-steps"><span><b>1</b>Train</span><i></i><span><b>2</b>Freeze</span><i></i><span><b>3</b>Test unseen data</span></div>
           </div>
           <div class="validation-controls">
@@ -204,13 +209,19 @@
 
       <section class="dashboard-section" id="execution">
         <div class="section-heading">
-          <span class="eyebrow">Execution &amp; portfolio</span><h2>Turn the selected market view into an execution scenario</h2><p>The native engine compares three ways to schedule one parent order. The portfolio tool separately shows the effect of buying at the first loaded open and valuing at the latest close.</p>
+          <span class="eyebrow">Execution decision</span><h2>How should a large order be divided and monitored?</h2><p>Compare three scheduling methods, understand their trade-offs, and inspect fill quality. Then value the resulting position separately using real selected-market prices.</p>
         </div>
         <div class="context-banner dark"><span>LIVE</span><div><small>Current execution input</small><strong id="execution-context">Waiting for market data</strong><em id="execution-context-detail">Load an instrument above to set a reference price.</em></div><a href="#overview">Change instrument</a></div>
+        <div class="execution-flow" aria-label="Execution workflow">
+          <div><span>1</span><strong>Set parent order</strong><small>Choose the total quantity to execute.</small></div><i>→</i>
+          <div><span>2</span><strong>Compare schedules</strong><small>TWAP, VWAP, and POV split it differently.</small></div><i>→</i>
+          <div><span>3</span><strong>Review quality</strong><small>Check fill rate, slippage, fees, and child orders.</small></div>
+        </div>
         <div class="execution-layout">
           <article class="panel execution-control">
             <div class="panel-header compact"><div><span class="panel-kicker">Native C++ engine</span><h3>Compare order schedules</h3></div><span class="engine-chip">TWAP · VWAP · POV</span></div>
             <p id="execution-market-copy">The latest validated close becomes the execution reference price.</p>
+            <div class="data-truth"><span><b>Real input</b> Symbol and latest market close</span><span><b>Simulation</b> Liquidity, child fills, slippage, and fees</span></div>
             <div class="execution-reference"><div><span>Reference price</span><strong id="execution-reference">—</strong></div><label><span>Parent quantity</span><input id="execution-quantity" type="number" value="1000" min="4" max="10000000" /></label></div>
             <div class="algo-explainers">
               <div><b>TWAP</b><span>Evenly across time</span><i class="twap-bars"><em></em><em></em><em></em><em></em></i></div>
@@ -220,8 +231,8 @@
             <button class="primary-button full" id="run-execution"><span>Compare execution algorithms</span><b>⚡</b></button>
           </article>
           <article class="panel portfolio-control">
-            <div class="panel-header compact"><div><span class="panel-kicker">Position scenario</span><h3>Value a buy-and-hold position</h3></div></div>
-            <p>Uses real selected-market prices to reconcile cash, equity, unrealized P&amp;L, and gross exposure.</p>
+            <div class="panel-header compact"><div><span class="panel-kicker">Position impact</span><h3>What would this position do to the account?</h3></div></div>
+            <p>Buy at the first loaded open and mark at the latest close. The result explains capital used, remaining cash, P&amp;L, equity, and exposure.</p>
             <div class="field-pair">
               <label><span>Starting capital</span><input id="portfolio-capital" type="number" value="1000000" min="1" step="1000" /></label>
               <label><span>Position quantity</span><input id="portfolio-quantity" type="number" value="10" min="1" /></label>
@@ -230,8 +241,8 @@
           </article>
         </div>
         <article class="panel output-panel" id="output-card">
-          <div class="panel-header"><div><span class="panel-kicker">Results</span><h3 id="output-title">Choose an execution or portfolio action</h3></div><span class="data-badge" id="output-status">Ready</span></div>
-          <div id="execution-output" class="execution-output"><p class="empty-copy">Results will be explained here using the selected instrument and real market reference price.</p></div>
+          <div class="panel-header"><div><span class="panel-kicker">Decision summary</span><h3 id="output-title">Choose an execution or portfolio action</h3></div><span class="data-badge" id="output-status">Ready</span></div>
+          <div id="execution-output" class="execution-output"><div class="output-empty-grid"><div><b>Execution comparison</b><span>Fill rate · child orders · slippage · fees</span></div><div><b>Position impact</b><span>Capital used · cash · P&amp;L · exposure</span></div></div></div>
         </article>
       </section>
     </main>

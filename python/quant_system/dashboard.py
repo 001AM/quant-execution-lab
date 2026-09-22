@@ -757,7 +757,7 @@ class MarketOverviewRequest(BaseModel):
 app = FastAPI(
     title="Quant Execution Lab",
     description="Validated market-data, research, portfolio, and execution simulation API.",
-    version="0.4.0",
+    version="0.4.1",
     docs_url="/api/docs",
     redoc_url=None,
     openapi_url="/api/openapi.json",
