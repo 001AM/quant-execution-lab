@@ -14,6 +14,7 @@ from quant_system.dashboard import (
     indian_market_overview,
     run_backtest,
     run_portfolio_snapshot,
+    run_risk_snapshot,
     run_walk_forward,
 )
 
@@ -46,7 +47,7 @@ def test_production_api_serves_health_and_dashboard() -> None:
 
     assert health.status_code == 200
     assert health.json()["status"] == "ok"
-    assert health.json()["version"] == "0.3.0"
+    assert health.json()["version"] == "0.4.0"
     assert page.status_code == 200
     assert "Quant Execution Lab" in page.text
 
@@ -95,6 +96,44 @@ def test_portfolio_snapshot_uses_selected_market_data(
     assert result["market_price"] == 112.45
     assert result["equity"] == pytest.approx(100_123.5)
     assert len(result["positions"]) == 1
+
+
+def test_risk_snapshot_calculates_limits_from_selected_market(
+    sample_payload: dict[str, object],
+) -> None:
+    result = run_risk_snapshot(
+        {
+            **sample_payload,
+            "risk_capital": 100_000,
+            "risk_quantity": 10,
+            "max_position_pct": 0.35,
+            "max_leverage": 1.0,
+            "max_drawdown_pct": 0.20,
+            "max_var_pct": 0.03,
+        }
+    )
+
+    assert result["symbol"] == "AAPL"
+    assert result["position"]["quantity"] == 10
+    assert result["gross_exposure"] == pytest.approx(1_124.5)
+    assert result["equity"] == pytest.approx(100_123.5)
+    assert len(result["limits"]) == 4
+    assert result["status"] == "healthy"
+
+
+def test_risk_snapshot_reports_real_limit_breach(sample_payload: dict[str, object]) -> None:
+    result = run_risk_snapshot(
+        {
+            **sample_payload,
+            "risk_capital": 100_000,
+            "risk_quantity": 100,
+            "max_position_pct": 0.01,
+        }
+    )
+
+    assert result["status"] == "breach"
+    assert result["risk_score"] > 100
+    assert any(alert["severity"] == "breach" for alert in result["alerts"])
 
 
 def test_dashboard_rejects_data_outside_project() -> None:

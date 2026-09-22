@@ -82,6 +82,19 @@ function backtestPayload() {
   };
 }
 
+function riskPayload() {
+  return {
+    ...dataPayload(),
+    risk_capital: Number($("#rms-capital").value),
+    risk_quantity: Number($("#rms-quantity").value),
+    commission: Number($("#commission").value),
+    max_position_pct: Number($("#rms-max-position").value) / 100,
+    max_leverage: Number($("#rms-max-leverage").value),
+    max_drawdown_pct: Number($("#rms-max-drawdown").value) / 100,
+    max_var_pct: Number($("#rms-max-var").value) / 100,
+  };
+}
+
 function downsample(points, maximum = 180) {
   if (points.length <= maximum) return points;
   const step = (points.length - 1) / (maximum - 1);
@@ -185,6 +198,7 @@ function renderMarket(data) {
   if (previousCurrency !== data.currency) {
     $("#capital").value = data.currency === "INR" ? 1000000 : 100000;
     $("#portfolio-capital").value = data.currency === "INR" ? 1000000 : 100000;
+    $("#rms-capital").value = data.currency === "INR" ? 1000000 : 100000;
   }
   const train = Math.max(8, Math.min(60, Math.floor(data.bars * .55)));
   const test = Math.max(3, Math.min(20, Math.floor((data.bars - train) / 2)));
@@ -198,10 +212,86 @@ async function loadMarket({ quiet = false } = {}) {
   try {
     const data = await post("/api/dataset", dataPayload());
     renderMarket(data);
+    await loadRiskSnapshot({ quiet: true });
     if (!quiet) toast(`${data.symbol}: ${data.bars} validated daily bars loaded.`);
   } catch (error) {
     $("#market-chart").innerHTML = `<p class="empty-message">${escapeHtml(error.message)}</p>`;
     toast(`${error.message}${state.source === "yahoo" ? " Try CSV if the network is unavailable." : ""}`, true);
+  } finally {
+    setBusy(button, false, "");
+  }
+}
+
+function formatRiskLimit(value, unit) {
+  if (unit === "multiple") return `${value.toFixed(2)}×`;
+  return `${(value * 100).toFixed(1)}%`;
+}
+
+function renderRiskSnapshot(data) {
+  const statusCopy = {
+    healthy: ["Within limits", "Risk controls are clear", "The selected position is operating inside every configured risk threshold."],
+    warning: ["Near limit", "One or more limits need attention", "Review the highlighted utilization before increasing this position."],
+    breach: ["Limit breach", "Risk action is required", "At least one configured threshold is breached. Reduce exposure or revise the approved limit."],
+  };
+  const [label, headline, summary] = statusCopy[data.status];
+  const score = Math.round(data.risk_score);
+  const ringUse = Math.min(score, 100);
+  const riskHero = $("#risk-hero");
+  riskHero.className = `panel risk-hero ${data.status}`;
+  $("#risk-state").className = `risk-state ${data.status}`;
+  $("#risk-status-label").textContent = label;
+  $("#risk-headline").textContent = headline;
+  $("#risk-summary").textContent = summary;
+  $("#risk-as-of").textContent = `${data.symbol} · marked through ${shortDate(data.as_of)}`;
+  $("#risk-score").textContent = `${score}%`;
+  $("#risk-ring").className = `risk-ring ${data.status}`;
+  $("#risk-ring").style.setProperty("--risk-angle", `${ringUse * 3.6}deg`);
+
+  const pnlClass = (value) => value >= 0 ? "positive" : "negative";
+  $("#risk-equity").textContent = formatCurrency(data.equity, data.currency, 2);
+  $("#risk-day-pnl").textContent = formatCurrency(data.daily_pnl, data.currency, 2);
+  $("#risk-day-pnl").className = pnlClass(data.daily_pnl);
+  $("#risk-unrealized").textContent = formatCurrency(data.unrealized_pnl, data.currency, 2);
+  $("#risk-unrealized").className = pnlClass(data.unrealized_pnl);
+  $("#risk-gross").textContent = formatCurrency(data.gross_exposure, data.currency, 0);
+  $("#risk-leverage").textContent = `${data.leverage.toFixed(2)}×`;
+  $("#risk-var").textContent = formatCurrency(data.var_95, data.currency, 0);
+
+  const breaches = data.limits.filter((limit) => limit.status === "breach").length;
+  const warnings = data.limits.filter((limit) => limit.status === "warning").length;
+  $("#limit-count").textContent = breaches ? `${breaches} breached` : warnings ? `${warnings} near limit` : "4 limits clear";
+  $("#risk-limit-list").innerHTML = data.limits.map((limit) => `
+    <div class="limit-row ${limit.status}">
+      <div class="limit-name"><strong>${escapeHtml(limit.name)}</strong><small>${formatRiskLimit(limit.current, limit.unit)} used · ${formatRiskLimit(limit.limit, limit.unit)} limit</small></div>
+      <div class="limit-track"><i style="width:${Math.min(limit.utilization * 100, 100)}%"></i></div>
+      <div class="limit-values">${Math.round(limit.utilization * 100)}% utilized</div>
+      <span class="limit-status">${escapeHtml(limit.status)}</span>
+    </div>`).join("");
+
+  const exceptions = data.alerts.filter((alert) => alert.severity !== "healthy").length;
+  $("#alert-count").textContent = exceptions ? `${exceptions} exception${exceptions === 1 ? "" : "s"}` : "No exceptions";
+  $("#risk-alerts").innerHTML = data.alerts.map((alert) => `<article class="risk-alert ${alert.severity}"><i></i><div><strong>${escapeHtml(alert.title)}</strong><small>${escapeHtml(alert.detail)}</small></div></article>`).join("");
+
+  const position = data.position;
+  $("#risk-position-body").innerHTML = `<tr>
+    <td><strong>${escapeHtml(position.symbol)}</strong></td><td><span class="side-badge">${position.side}</span></td><td>${position.quantity}</td>
+    <td>${formatCurrency(position.entry_price, data.currency, 2)}</td><td>${formatCurrency(position.market_price, data.currency, 2)}</td>
+    <td>${formatCurrency(position.market_value, data.currency, 2)}</td><td class="${pnlClass(position.unrealized_pnl)}">${formatCurrency(position.unrealized_pnl, data.currency, 2)}</td><td>${(position.position_pct * 100).toFixed(1)}%</td>
+  </tr>`;
+}
+
+async function loadRiskSnapshot({ quiet = false } = {}) {
+  const button = $("#refresh-risk");
+  setBusy(button, true, "Calculating risk…");
+  try {
+    const data = await post("/api/risk-snapshot", riskPayload());
+    renderRiskSnapshot(data);
+    if (!quiet) toast(`${data.symbol}: RMS recalculated with ${data.status} status.`);
+  } catch (error) {
+    $("#risk-status-label").textContent = "Risk unavailable";
+    $("#risk-headline").textContent = "The RMS calculation could not complete";
+    $("#risk-summary").textContent = error.message;
+    toast(error.message, true);
   } finally {
     setBusy(button, false, "");
   }
@@ -415,6 +505,7 @@ $("#csv-file").addEventListener("change", async (event) => {
 $("#symbol").addEventListener("keydown", (event) => { if (event.key === "Enter") loadMarket(); });
 $("#strategy").addEventListener("change", updateStrategyGuide);
 $("#load-market").addEventListener("click", () => loadMarket());
+$("#refresh-risk").addEventListener("click", () => loadRiskSnapshot());
 $("#run-backtest").addEventListener("click", runBacktest);
 $("#run-walk-forward").addEventListener("click", runWalkForward);
 $("#run-execution").addEventListener("click", runExecution);

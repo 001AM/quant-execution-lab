@@ -531,6 +531,126 @@ def run_portfolio_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def run_risk_snapshot(payload: dict[str, Any]) -> dict[str, Any]:
+    """Calculate a real-data RMS snapshot for one selected-market position."""
+
+    data, source, provider = _load_data(payload)
+    if len(data) < 2:
+        raise ValueError("risk monitoring requires at least two validated market bars")
+
+    capital = _number(payload, "risk_capital", 1_000_000, minimum=1)
+    quantity = _integer(payload, "risk_quantity", 10)
+    commission_rate = _number(payload, "commission", 0.001)
+    max_position_pct = _number(payload, "max_position_pct", 0.35, minimum=0.01)
+    max_leverage = _number(payload, "max_leverage", 1.0, minimum=0.01)
+    max_drawdown_limit = _number(payload, "max_drawdown_pct", 0.20, minimum=0.01)
+    max_var_pct = _number(payload, "max_var_pct", 0.03, minimum=0.001)
+
+    symbol = str(data["symbol"].iloc[0])
+    entry_price = float(data["open"].iloc[0])
+    previous_close = float(data["close"].iloc[-2])
+    market_price = float(data["close"].iloc[-1])
+    commission = entry_price * quantity * commission_rate
+    market_value = market_price * quantity
+    cash = capital - entry_price * quantity - commission
+    equity = cash + market_value
+    equity_denominator = max(abs(equity), 1e-9)
+    unrealized_pnl = (market_price - entry_price) * quantity - commission
+    daily_pnl = (market_price - previous_close) * quantity
+    leverage = market_value / equity_denominator
+    position_pct = market_value / equity_denominator
+
+    returns = data["close"].astype(float).pct_change().dropna()
+    annualized_volatility = float(returns.std() * math.sqrt(252)) if len(returns) > 1 else 0.0
+    var_rate = max(0.0, -float(returns.quantile(0.05))) if not returns.empty else 0.0
+    var_95 = var_rate * market_value
+    var_95_pct = var_95 / equity_denominator
+    drawdown_series = data["close"].astype(float) / data["close"].astype(float).cummax() - 1.0
+    max_drawdown = abs(float(drawdown_series.min()))
+
+    limit_inputs = (
+        ("Position concentration", position_pct, max_position_pct, "percent"),
+        ("Portfolio leverage", leverage, max_leverage, "multiple"),
+        ("Historical drawdown", max_drawdown, max_drawdown_limit, "percent"),
+        ("One-day historical VaR", var_95_pct, max_var_pct, "percent"),
+    )
+    limits: list[dict[str, Any]] = []
+    for name, current, limit, unit in limit_inputs:
+        utilization = current / limit
+        status = "breach" if utilization >= 1 else "warning" if utilization >= 0.8 else "healthy"
+        limits.append(
+            {
+                "name": name,
+                "current": current,
+                "limit": limit,
+                "unit": unit,
+                "utilization": utilization,
+                "status": status,
+            }
+        )
+
+    breaches = [limit for limit in limits if limit["status"] == "breach"]
+    warnings = [limit for limit in limits if limit["status"] == "warning"]
+    overall_status = "breach" if breaches else "warning" if warnings else "healthy"
+    max_utilization = max(limit["utilization"] for limit in limits)
+    alerts = [
+        {
+            "severity": limit["status"],
+            "title": (
+                f"{limit['name']} "
+                f"{'breached' if limit['status'] == 'breach' else 'near limit'}"
+            ),
+            "detail": f"{limit['utilization'] * 100:.0f}% of configured limit is in use.",
+        }
+        for limit in limits
+        if limit["status"] != "healthy"
+    ]
+    if not alerts:
+        alerts.append(
+            {
+                "severity": "healthy",
+                "title": "All monitored limits are within range",
+                "detail": "No concentration, leverage, drawdown, or VaR threshold is near breach.",
+            }
+        )
+
+    return {
+        "source": source,
+        "provider": provider,
+        "symbol": symbol,
+        "exchange": _exchange_for_symbol(symbol),
+        "currency": _currency_for_symbol(symbol),
+        "as_of": pd.Timestamp(data["timestamp"].iloc[-1]).isoformat(),
+        "status": overall_status,
+        "risk_score": min(max_utilization * 100, 999.0),
+        "capital": capital,
+        "cash": cash,
+        "equity": equity,
+        "daily_pnl": daily_pnl,
+        "unrealized_pnl": unrealized_pnl,
+        "gross_exposure": market_value,
+        "net_exposure": market_value,
+        "available_capital": cash,
+        "leverage": leverage,
+        "annualized_volatility": annualized_volatility,
+        "max_drawdown": max_drawdown,
+        "var_95": var_95,
+        "var_95_pct": var_95_pct,
+        "limits": limits,
+        "alerts": alerts,
+        "position": {
+            "symbol": symbol,
+            "quantity": quantity,
+            "side": "LONG",
+            "entry_price": entry_price,
+            "market_price": market_price,
+            "market_value": market_value,
+            "unrealized_pnl": unrealized_pnl,
+            "position_pct": position_pct,
+        },
+    }
+
+
 def run_execution_simulation(payload: dict[str, Any]) -> dict[str, Any]:
     """Run native execution algorithms using the selected market's latest close."""
 
@@ -618,6 +738,16 @@ class ExecutionRequest(DataRequest):
     execution_quantity: int = Field(default=1_000, ge=4)
 
 
+class RiskSnapshotRequest(DataRequest):
+    risk_capital: float = Field(default=1_000_000, gt=0)
+    risk_quantity: int = Field(default=10, ge=1)
+    commission: float = Field(default=0.001, ge=0)
+    max_position_pct: float = Field(default=0.35, ge=0.01, le=10)
+    max_leverage: float = Field(default=1.0, ge=0.01, le=100)
+    max_drawdown_pct: float = Field(default=0.20, ge=0.01, le=1)
+    max_var_pct: float = Field(default=0.03, ge=0.001, le=1)
+
+
 class MarketOverviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -627,7 +757,7 @@ class MarketOverviewRequest(BaseModel):
 app = FastAPI(
     title="Quant Execution Lab",
     description="Validated market-data, research, portfolio, and execution simulation API.",
-    version="0.3.0",
+    version="0.4.0",
     docs_url="/api/docs",
     redoc_url=None,
     openapi_url="/api/openapi.json",
@@ -663,6 +793,11 @@ def api_dataset(request: DataRequest) -> dict[str, Any]:
 @app.post("/api/market-overview")
 def api_market_overview(request: MarketOverviewRequest) -> dict[str, Any]:
     return indian_market_overview(request.period)
+
+
+@app.post("/api/risk-snapshot")
+def api_risk_snapshot(request: RiskSnapshotRequest) -> dict[str, Any]:
+    return run_risk_snapshot(request.model_dump())
 
 
 @app.post("/api/backtest")

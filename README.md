@@ -165,15 +165,20 @@ hybrid Newton/bisection implied-volatility solver.
 
 ## Dashboard
 
-The dashboard is one scrollable decision workspace with a compact header instead of a sidebar:
+The dashboard is one scrollable Risk Management System (RMS) and decision workspace with a compact
+header instead of a sidebar:
 
-1. **Overview** — load Yahoo Finance history or a CSV, see price and volume, understand the period
-   move, and locate the latest close inside its high-low range.
-2. **India sector map** — compare Nifty 50, Sensex, and Bank Nifty alongside ten NSE sector baskets,
+1. **Risk monitor** — configure account capital, position quantity, concentration, leverage,
+   drawdown, and one-day VaR limits. The RMS derives marked equity, daily and unrealized P&L, gross
+   exposure, leverage, 95% historical VaR, limit utilization, breaches, alerts, and a position table
+   from the selected instrument's real history.
+2. **Market analysis** — inspect price and volume, understand the period move, and locate the latest
+   close inside its high-low range.
+3. **India sector map** — compare Nifty 50, Sensex, and Bank Nifty alongside ten NSE sector baskets,
    constituent returns, market breadth, provider coverage, and 1M/3M/6M/1Y views.
-3. **Strategy lab** — configure capital, order size, costs, and short selling; compare strategies and
+4. **Strategy lab** — configure capital, order size, costs, and short selling; compare strategies and
    equity curves, then run walk-forward validation on unseen windows.
-4. **Execution and portfolio** — compare TWAP, VWAP, and POV through graphical fill summaries and
+5. **Execution and portfolio** — compare TWAP, VWAP, and POV through graphical fill summaries and
    detailed native output, or value a position using the selected instrument's real price history.
 
 The dashboard is served by a validated FastAPI application on Uvicorn. Request schemas reject

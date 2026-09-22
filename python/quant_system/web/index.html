@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Explore Indian markets, compare sectors, test strategies, and simulate execution with real market data." />
+    <meta name="description" content="Monitor trading risk, exposure, limits, Indian markets, strategies, and execution with real market data." />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><rect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%23091425%22/><path d=%22M14 42l11-13 9 7 16-20%22 fill=%22none%22 stroke=%22%2338d99b%22 stroke-width=%226%22 stroke-linecap=%22round%22/></svg>" />
     <title>Quant Execution Lab · India Market Dashboard</title>
     <link rel="stylesheet" href="/styles.css" />
@@ -12,10 +12,10 @@
     <header class="app-header">
       <a class="brand" href="#overview" aria-label="Quant Execution Lab home">
         <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span><strong>Quant Execution Lab</strong><small>India market research workspace</small></span>
+        <span><strong>Quant Execution Lab</strong><small>Risk &amp; execution workspace</small></span>
       </a>
       <nav class="top-nav" aria-label="Dashboard sections">
-        <a class="active" href="#overview">Overview</a>
+        <a class="active" href="#overview">Risk monitor</a>
         <a href="#sectors">Sectors</a>
         <a href="#strategy-lab">Strategy lab</a>
         <a href="#execution">Execution</a>
@@ -26,8 +26,8 @@
     <main>
       <section class="dashboard-section overview-section" id="overview">
         <div class="section-heading heading-with-status">
-          <div><span class="eyebrow">Market overview</span><h1>Understand the market before you test a trade</h1><p>Choose any Indian or global instrument. The same validated data powers every chart, strategy, and execution run below.</p></div>
-          <div class="selected-market" aria-live="polite"><span id="ticker-avatar">N</span><div><small>Selected instrument</small><strong id="selected-symbol">NIFTY 50</strong><em id="selected-detail">Connecting to market data…</em></div></div>
+          <div><span class="eyebrow">Risk Management System</span><h1>Monitor risk before it becomes a breach</h1><p>Select an instrument and position scenario to track live exposure, P&amp;L, leverage, drawdown, VaR, and configured limits.</p></div>
+          <div class="selected-market" aria-live="polite"><span id="ticker-avatar">N</span><div><small>RMS instrument</small><strong id="selected-symbol">NIFTY 50</strong><em id="selected-detail">Connecting to market data…</em></div></div>
         </div>
 
         <article class="control-panel">
@@ -54,6 +54,55 @@
             <button data-symbol="TCS" data-exchange="nse">TCS</button>
             <button data-symbol="HDFCBANK" data-exchange="nse">HDFC Bank</button>
           </div>
+        </article>
+
+        <article class="rms-toolbar">
+          <div class="rms-toolbar-copy"><span class="panel-kicker">Position scenario</span><strong>Risk inputs</strong><small>Change the position or limits, then recalculate the RMS.</small></div>
+          <div class="rms-inputs">
+            <label><span>Account capital</span><input id="rms-capital" type="number" value="1000000" min="1" step="1000" /></label>
+            <label><span>Position quantity</span><input id="rms-quantity" type="number" value="10" min="1" step="1" /></label>
+            <label><span>Max position</span><div class="suffix-input"><input id="rms-max-position" type="number" value="35" min="1" step="1" /><b>%</b></div></label>
+            <label><span>Max leverage</span><div class="suffix-input"><input id="rms-max-leverage" type="number" value="1" min="0.1" step="0.1" /><b>×</b></div></label>
+          </div>
+          <button class="primary-button" id="refresh-risk"><span>Recalculate RMS</span><b>↻</b></button>
+          <details class="rms-limit-settings">
+            <summary>More risk limits <span>⌄</span></summary>
+            <div class="field-pair detail-fields">
+              <label><span>Max drawdown</span><div class="suffix-input"><input id="rms-max-drawdown" type="number" value="20" min="1" max="100" /><b>%</b></div></label>
+              <label><span>Max one-day VaR</span><div class="suffix-input"><input id="rms-max-var" type="number" value="3" min="0.1" max="100" step="0.1" /><b>%</b></div></label>
+            </div>
+          </details>
+        </article>
+
+        <div class="rms-status-grid" aria-live="polite">
+          <article class="panel risk-hero" id="risk-hero">
+            <div class="risk-hero-copy"><span class="risk-state healthy" id="risk-state"><i></i><b id="risk-status-label">Calculating risk</b></span><h2 id="risk-headline">Checking configured limits…</h2><p id="risk-summary">The RMS is loading the selected position and its validated price history.</p><small id="risk-as-of">Waiting for market data</small></div>
+            <div class="risk-ring" id="risk-ring"><div><strong id="risk-score">—</strong><span>limit use</span></div></div>
+          </article>
+          <div class="risk-kpi-grid">
+            <article><span>Account equity</span><strong id="risk-equity">—</strong><small>Cash plus marked position</small></article>
+            <article><span>Day P&amp;L</span><strong id="risk-day-pnl">—</strong><small>Latest close-to-close move</small></article>
+            <article><span>Unrealized P&amp;L</span><strong id="risk-unrealized">—</strong><small>Since first loaded open</small></article>
+            <article><span>Gross exposure</span><strong id="risk-gross">—</strong><small>Absolute marked notional</small></article>
+            <article><span>Leverage</span><strong id="risk-leverage">—</strong><small>Exposure ÷ equity</small></article>
+            <article><span>1-day VaR · 95%</span><strong id="risk-var">—</strong><small>Historical loss estimate</small></article>
+          </div>
+        </div>
+
+        <div class="rms-detail-grid">
+          <article class="panel limit-panel">
+            <div class="panel-header"><div><span class="panel-kicker">Pre-trade controls</span><h2>Risk limit utilization</h2></div><span class="data-badge" id="limit-count">4 limits</span></div>
+            <div class="limit-list" id="risk-limit-list"><div class="loading-block"></div></div>
+          </article>
+          <article class="panel alert-panel">
+            <div class="panel-header"><div><span class="panel-kicker">Exceptions</span><h2>Alerts &amp; actions</h2></div><span class="data-badge" id="alert-count">Checking</span></div>
+            <div class="risk-alerts" id="risk-alerts"><p>Evaluating position concentration, leverage, drawdown, and VaR.</p></div>
+          </article>
+        </div>
+
+        <article class="panel position-panel">
+          <div class="panel-header"><div><span class="panel-kicker">Open position</span><h2>Position and exposure</h2></div><span class="data-badge">Real market mark</span></div>
+          <div class="position-table-wrap"><table class="position-table"><thead><tr><th>Symbol</th><th>Side</th><th>Quantity</th><th>Entry</th><th>Market price</th><th>Market value</th><th>Unrealized P&amp;L</th><th>% of equity</th></tr></thead><tbody id="risk-position-body"><tr><td colspan="8">Loading position risk…</td></tr></tbody></table></div>
         </article>
 
         <div class="overview-grid">
